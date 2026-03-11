@@ -3,8 +3,6 @@ name: Deploy Portal to GitHub Pages
 on:
   push:
     branches: [main]
-    paths:
-      - 'portal/**'
   workflow_dispatch:
 
 permissions:
@@ -25,24 +23,21 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
-          node-version: 20
+          node-version: 24
           cache: npm
-          cache-dependency-path: portal/package-lock.json
 
       - name: Install dependencies
-        working-directory: portal
         run: npm install
 
       - name: Build
-        working-directory: portal
         run: npm run build
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: portal/dist
+          path: dist
 
       - name: Deploy to GitHub Pages
         id: deployment
