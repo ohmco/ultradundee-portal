@@ -21,7 +21,7 @@ const A = {
 };
 
 // ─── BASEROW ─────────────────────────────────────────────────────────────────
-const TOKEN = "CXw5eZ9NeLncSGdHZAyMxNmCZrZ5g3OH";
+const TOKEN = "Qu3ab715EJKly2rFhGJagUzPbbIqOYKl";
 const BASE  = "https://api.baserow.io/api/database/rows/table";
 
 async function fetchAll(tableId) {
@@ -58,8 +58,8 @@ function mapTourDay(r) {
     status:    r["Status"]?.value || "",
     notes:     r["Notes"],
     supports:  r["Support acts"],
-    taskIds:   (r["Tasks"] || []).map(t => t.id),
-    travelIds: (r["Travel"] || []).map(t => t.id),
+    taskIds:   (r["Tasks"]  || []).filter(Boolean).map(t => t.id),
+    travelIds: (r["Travel"] || []).filter(Boolean).map(t => t.id),
   };
 }
 
@@ -89,8 +89,8 @@ function mapTravel(r) {
     arr:        r["Arrival time"],
     ref:        r["Booking reference"],
     status:     r["Status"]?.value || "",
-    passengers: (r["Passengers"] || []).map(p => p.value),
-    dayIds:     (r["Linked day"] || []).map(d => d.id),
+    passengers: (r["Passengers"] || []).filter(Boolean).map(p => p.value),
+    dayIds:     (r["Linked day"] || []).filter(Boolean).map(d => d.id),
   };
 }
 
