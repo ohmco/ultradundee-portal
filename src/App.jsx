@@ -135,7 +135,10 @@ function formatDate(iso) {
 }
 function daysUntil(iso) {
   if (!iso) return null;
-  return Math.round((new Date(iso + "T00:00:00") - new Date("2026-03-11")) / 86400000);
+  const target = new Date(iso + "T00:00:00");
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return Math.round((target - today) / 86400000);
 }
 
 // ─── PRIMITIVES ─────────────────────────────────────────────────────────────
