@@ -21,7 +21,7 @@ const A = {
 };
 
 // ─── BASEROW ─────────────────────────────────────────────────────────────────
-const TOKEN = "Qu3ab715EJKly2rFhGJagUzPbbIqOYKl";
+const TOKEN = import.meta.env.VITE_BASEROW_API_TOKEN;
 const BASE  = "https://api.baserow.io/api/database/rows/table";
 
 async function fetchAll(tableId) {
