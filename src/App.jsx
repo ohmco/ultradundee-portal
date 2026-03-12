@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 
 // ─── DESIGN TOKENS ──────────────────────────────────────────────────────────
 const T = {
@@ -60,7 +60,7 @@ const CAT_COLOR = {
 };
 
 // ─── BASEROW ─────────────────────────────────────────────────────────────────
-const TOKEN = "Qu3ab715EJKly2rFhGJagUzPbbIqOYKl";
+const TOKEN = import.meta.env.VITE_BASEROW_API_TOKEN;
 const BASE  = "https://api.baserow.io/api/database/rows/table";
 
 async function fetchAll(tableId) {
@@ -144,8 +144,13 @@ const fmtDate = (iso, opts = {}) => {
   });
 };
 const fmtMonth = iso => new Date(iso + "T00:00:00").toLocaleDateString("en-AU", { month: "long", year: "numeric" });
-const today = new Date("2026-03-12");
-const daysFrom = iso => iso ? Math.round((new Date(iso + "T00:00:00") - today) / 86400000) : null;
+const daysFrom = iso => {
+  if (!iso) return null;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const target = new Date(iso + "T00:00:00");
+  return Math.round((target - today) / 86400000);
+};
 const cityOf = str => Object.keys(CITY).find(c => (str||"").includes(c));
 
 // ─── SHARED PRIMITIVES ───────────────────────────────────────────────────────
@@ -268,8 +273,9 @@ const FORMS = [
 ];
 
 // ─── ADVANCING TOKEN ─────────────────────────────────────────────────────────
-const ADV_TOKEN = "adv2026ud";
+const ADV_TOKEN = import.meta.env.VITE_ADV_TOKEN;
 const isAdvancing = () => {
+  if (!ADV_TOKEN) return false;
   try {
     const params = new URLSearchParams(window.location.search);
     return params.get("adv") === ADV_TOKEN;
@@ -279,7 +285,6 @@ const isAdvancing = () => {
 // ─── CALENDAR VIEW ────────────────────────────────────────────────────────────
 function CalendarView({ tourDays, onSelectDay }) {
   const [viewMode, setViewMode] = useState("list");
-  const [monthOffset, setMonthOffset] = useState(0);
 
   const sorted = [...tourDays].sort((a, b) => (a.date || "").localeCompare(b.date || ""));
 
