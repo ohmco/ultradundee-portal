@@ -144,8 +144,13 @@ const fmtDate = (iso, opts = {}) => {
   });
 };
 const fmtMonth = iso => new Date(iso + "T00:00:00").toLocaleDateString("en-AU", { month: "long", year: "numeric" });
-const today = (() => { const d = new Date(); d.setHours(0, 0, 0, 0); return d; })();
-const daysFrom = iso => iso ? Math.round((new Date(iso + "T00:00:00") - today) / 86400000) : null;
+const daysFrom = iso => {
+  if (!iso) return null;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const target = new Date(iso + "T00:00:00");
+  return Math.round((target - today) / 86400000);
+};
 const cityOf = str => Object.keys(CITY).find(c => (str||"").includes(c));
 
 // ─── SHARED PRIMITIVES ───────────────────────────────────────────────────────
