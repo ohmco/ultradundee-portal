@@ -1,6 +1,6 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 
-// ─── DESIGN TOKENS ──────────────────────────────────────────────────────────
+// ─── DESIGN TOKENS ───────────────────────────────────────────────────────────
 const T = {
   bg:       "#111110",
   bg1:      "#1c1c1a",
@@ -12,23 +12,10 @@ const T = {
   body:     "#c8c8b8",
   heading:  "#e8e8d8",
   white:    "#f4f4ec",
-
-  amber:    "#e8a84c",
-  amberBg:  "#1e1a0e",
-  amberBdr: "#2e2610",
-
-  blue:     "#6b9fd4",
-  blueBg:   "#0e1520",
-  blueBdr:  "#162030",
-
-  violet:   "#9b7fd4",
-  violetBg: "#16111e",
-  violetBdr:"#221830",
-
-  sage:     "#7ab87a",
-  sageBg:   "#0e1a0e",
-  sageBdr:  "#162616",
-
+  amber:    "#e8a84c", amberBg: "#1e1a0e", amberBdr: "#2e2610",
+  blue:     "#6b9fd4", blueBg:  "#0e1520", blueBdr:  "#162030",
+  violet:   "#9b7fd4", violetBg:"#16111e", violetBdr:"#221830",
+  sage:     "#7ab87a", sageBg:  "#0e1a0e", sageBdr:  "#162616",
   red:      "#d46b6b",
   orange:   "#d49b6b",
 };
@@ -40,29 +27,35 @@ const CITY = {
   Brisbane:  { accent: T.sage,   bg: T.sageBg,   border: T.sageBdr,   label: "BNE" },
 };
 
+const STOP_ORDER = ["ADL", "MEL", "SYD", "BNE", "General"];
+
+const STOP_META = {
+  ADL:     { label: "Adelaide",  color: T.amber,  bg: T.amberBg,  border: T.amberBdr  },
+  MEL:     { label: "Melbourne", color: T.blue,   bg: T.blueBg,   border: T.blueBdr   },
+  SYD:     { label: "Sydney",    color: T.violet, bg: T.violetBg, border: T.violetBdr },
+  BNE:     { label: "Brisbane",  color: T.sage,   bg: T.sageBg,   border: T.sageBdr   },
+  General: { label: "General",   color: T.muted,  bg: T.bg1,      border: T.line      },
+};
+
 const TYPE_BADGE = {
   Show:       { bg: "#0e1a2e", color: T.blue },
   Festival:   { bg: "#16102a", color: T.violet },
   Rehearsal:  { bg: "#0e1e10", color: T.sage },
   Travel:     { bg: "#1a1408", color: T.amber },
   Production: { bg: "#1a1408", color: T.orange },
-  Off:        { bg: T.bg2, color: T.muted },
+  Off:        { bg: T.bg2,     color: T.muted },
 };
 
 const CAT_GROUP = {
-  "Communication": { label: "Communication", color: T.blue   },
-  "Production":    { label: "Production",    color: T.orange },
-  "Travel":        { label: "Travel",        color: T.amber  },
-  "Accommodation": { label: "Accommodation", color: T.violet },
-  "Admin":         { label: "Admin",         color: T.subtle },
+  Communication: { color: T.blue   },
+  Production:    { color: T.orange },
+  Travel:        { color: T.amber  },
+  Accommodation: { color: T.violet },
+  Admin:         { color: T.subtle },
 };
-const GROUP_ORDER = ["Communication", "Production", "Travel", "Accommodation", "Admin"];
-const CITY_ORDER  = ["ADL", "MEL", "SYD", "BNE", "General"];
+const CAT_ORDER = ["Communication", "Production", "Travel", "Accommodation", "Admin"];
 
-const taskPrefix = name => { const i = name.indexOf(" — "); return i > -1 ? name.slice(0, i) : name; };
-const cityLabel  = city => (CITY[city] || {}).label || null;
-
-// ─── BASEROW ─────────────────────────────────────────────────────────────────
+// ─── UTILS ────────────────────────────────────────────────────────────────────
 const TOKEN = "Qu3ab715EJKly2rFhGJagUzPbbIqOYKl";
 const BASE  = "https://api.baserow.io/api/database/rows/table";
 
@@ -81,7 +74,6 @@ async function fetchAll(tableId) {
   return results;
 }
 
-// ─── MAPPERS ─────────────────────────────────────────────────────────────────
 const mapTourDay = r => ({
   id:         r.id,
   name:       r["Name"],
@@ -103,35 +95,22 @@ const mapTourDay = r => ({
 });
 
 const mapPerson = r => ({
-  id:       r.id,
-  name:     r["Name"],
-  initials: r["Initials"],
-  role:     r["Role"],
-  type:     r["Type"]?.value || "",
-  base:     r["Base city"],
-  phone:    r["Phone"],
-  email:    r["Email"],
+  id: r.id, name: r["Name"], initials: r["Initials"],
+  role: r["Role"], type: r["Type"]?.value || "",
+  base: r["Base city"], phone: r["Phone"], email: r["Email"],
 });
 
 const mapTravel = r => ({
-  id:         r.id,
-  leg:        r["Leg"],
-  date:       r["Date"],
-  from:       r["From"],
-  to:         r["To"],
-  mode:       r["Mode"]?.value || "",
-  flightNo:   r["Flight number"],
-  dep:        r["Departure time"],
-  arr:        r["Arrival time"],
-  ref:        r["Booking reference"],
-  status:     r["Status"]?.value || "",
+  id: r.id, leg: r["Leg"], date: r["Date"],
+  from: r["From"], to: r["To"], mode: r["Mode"]?.value || "",
+  flightNo: r["Flight number"], dep: r["Departure time"], arr: r["Arrival time"],
+  ref: r["Booking reference"], status: r["Status"]?.value || "",
   passengers: (r["Passengers"] || []).map(p => p.value),
-  dayIds:     (r["Linked day"] || []).map(d => d.id),
+  dayIds: (r["Linked day"] || []).map(d => d.id),
 });
 
 const mapTask = r => ({
-  id:       r.id,
-  task:     r["Task"],
+  id: r.id, task: r["Task"],
   dayId:    r["Linked day"]?.[0]?.id || null,
   category: r["Category"]?.value || "",
   status:   r["Status"]?.value || "Not started",
@@ -139,7 +118,6 @@ const mapTask = r => ({
   notes:    r["Notes"],
 });
 
-// ─── UTILS ───────────────────────────────────────────────────────────────────
 const fmtDate = (iso, opts = {}) => {
   if (!iso) return "TBC";
   return new Date(iso + "T00:00:00").toLocaleDateString("en-AU", {
@@ -147,41 +125,330 @@ const fmtDate = (iso, opts = {}) => {
   });
 };
 const fmtMonth = iso => new Date(iso + "T00:00:00").toLocaleDateString("en-AU", { month: "long", year: "numeric" });
-const today = new Date("2026-03-12");
+const today    = new Date("2026-03-12");
 const daysFrom = iso => iso ? Math.round((new Date(iso + "T00:00:00") - today) / 86400000) : null;
-const cityOf = str => Object.keys(CITY).find(c => (str||"").includes(c));
+const cityOf   = str => Object.keys(CITY).find(c => (str||"").includes(c));
+const cityLabel = city => (CITY[city] || {}).label || null;
+const taskPrefix = name => { const i = name.indexOf(" — "); return i > -1 ? name.slice(0, i) : name; };
+const cityToStop = city => cityLabel(city) || "General";
 
-// ─── SHARED PRIMITIVES ───────────────────────────────────────────────────────
+// ─── SHARED PRIMITIVES ────────────────────────────────────────────────────────
 const Dot = ({ city, size = 7 }) => (
-  <span style={{
-    display: "inline-block", width: size, height: size, borderRadius: "50%",
-    background: (CITY[city] || { accent: T.muted }).accent, flexShrink: 0,
-  }} />
+  <span style={{ display:"inline-block", width:size, height:size, borderRadius:"50%",
+    background:(CITY[city]||{accent:T.muted}).accent, flexShrink:0 }} />
 );
 
 const Badge = ({ text, type }) => {
   const s = TYPE_BADGE[type] || TYPE_BADGE[text] || { bg: T.bg2, color: T.subtle };
-  return (
-    <span style={{
-      background: s.bg, color: s.color, fontSize: 10, fontWeight: 700,
-      letterSpacing: "0.08em", textTransform: "uppercase",
-      padding: "2px 7px", borderRadius: 3, flexShrink: 0,
-    }}>{text}</span>
-  );
+  return <span style={{ background:s.bg, color:s.color, fontSize:10, fontWeight:700,
+    letterSpacing:"0.08em", textTransform:"uppercase", padding:"2px 7px", borderRadius:3, flexShrink:0 }}>{text}</span>;
 };
 
 const StatusDot = ({ status }) => {
-  const color = status === "Done" ? T.sage : status === "In progress" ? T.amber : status === "Blocked" ? T.red : T.muted;
-  return <span style={{ width: 6, height: 6, borderRadius: "50%", background: color, display: "inline-block", flexShrink: 0 }} />;
+  const color = status==="Done" ? T.sage : status==="In progress" ? T.amber : status==="Blocked" ? T.red : T.muted;
+  return <span style={{ width:6, height:6, borderRadius:"50%", background:color, display:"inline-block", flexShrink:0 }} />;
 };
 
-const Divider = () => <div style={{ height: 1, background: T.line, margin: "0" }} />;
-
 const SectionLabel = ({ children }) => (
-  <div style={{ fontSize: 10, color: T.muted, textTransform: "uppercase", letterSpacing: "0.1em", fontWeight: 700, marginBottom: 10 }}>
+  <div style={{ fontSize:10, color:T.muted, textTransform:"uppercase", letterSpacing:"0.1em", fontWeight:700, marginBottom:10 }}>
     {children}
   </div>
 );
+
+// ─── PROGRESS CIRCLE ─────────────────────────────────────────────────────────
+function ProgressCircle({ pct, color, size = 48, stroke = 4 }) {
+  const r = (size - stroke) / 2;
+  const circ = 2 * Math.PI * r;
+  const dash = (pct / 100) * circ;
+  return (
+    <svg width={size} height={size} style={{ transform: "rotate(-90deg)", flexShrink: 0 }}>
+      <circle cx={size/2} cy={size/2} r={r} fill="none" stroke={T.bg3} strokeWidth={stroke} />
+      <circle cx={size/2} cy={size/2} r={r} fill="none" stroke={color} strokeWidth={stroke}
+        strokeDasharray={`${dash} ${circ}`} strokeLinecap="round"
+        style={{ transition: "stroke-dasharray 0.4s ease" }} />
+    </svg>
+  );
+}
+
+// ─── STOP DASHBOARD CARDS ────────────────────────────────────────────────────
+function StopDashboard({ tasks, tourDays, onSelectStop, activeStop }) {
+  return (
+    <div style={{ display:"flex", gap:10, padding:"20px 28px 0", flexWrap:"wrap" }}>
+      {STOP_ORDER.map(stop => {
+        const meta = STOP_META[stop];
+        const stopDayIds = stop === "General"
+          ? []
+          : tourDays.filter(d => cityToStop(d.city) === stop).map(d => d.id);
+
+        const stopTasks = stop === "General"
+          ? tasks.filter(t => !t.dayId)
+          : tasks.filter(t => t.dayId && stopDayIds.includes(t.dayId));
+
+        const total = stopTasks.length;
+        const done  = stopTasks.filter(t => t.status === "Done").length;
+        const open  = total - done;
+        const pct   = total > 0 ? Math.round((done / total) * 100) : 0;
+        const isActive = activeStop === stop;
+
+        return (
+          <div key={stop} onClick={() => onSelectStop(stop)} style={{
+            flex: "1 1 130px", minWidth: 120, maxWidth: 180,
+            background: isActive ? meta.bg : T.bg1,
+            border: `1px solid ${isActive ? meta.border : T.line}`,
+            borderRadius: 8, padding: "14px 16px", cursor: "pointer",
+            transition: "background 0.15s, border-color 0.15s",
+          }}>
+            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom: 10 }}>
+              <div>
+                <div style={{ fontSize:13, fontWeight:700, color: isActive ? meta.color : T.heading }}>{stop}</div>
+                <div style={{ fontSize:10, color:T.muted, marginTop:1 }}>{meta.label}</div>
+              </div>
+              <ProgressCircle pct={pct} color={meta.color} size={44} stroke={4} />
+            </div>
+            <div style={{ display:"flex", alignItems:"baseline", gap:4 }}>
+              <span style={{ fontSize:22, fontWeight:800, color:meta.color, lineHeight:1 }}>{pct}%</span>
+            </div>
+            <div style={{ fontSize:10, color:T.muted, marginTop:3 }}>
+              {done}/{total} done · {open} open
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// ─── TASK GROUP (shared collapsible prefix group) ─────────────────────────────
+function PrefixGroup({ prefix, items, accentColor, collapsed, onToggle }) {
+  const isCollapsible = items.length > 1;
+  const isOpen = !collapsed;
+
+  if (!isCollapsible) {
+    return items.map(t => (
+      <div key={t.id} style={{
+        display:"flex", alignItems:"flex-start", gap:10, padding:"8px 12px",
+        background:T.bg1, borderRadius:5, marginBottom:4,
+        border:`1px solid ${T.line}`, borderLeft:`3px solid ${accentColor}`,
+      }}>
+        <StatusDot status={t.status} />
+        <div style={{ flex:1 }}>
+          <div style={{ fontSize:13, color:T.body, fontWeight:500 }}>{t.task}</div>
+          {t.notes && <div style={{ fontSize:11, color:T.muted, marginTop:2 }}>{t.notes}</div>}
+        </div>
+      </div>
+    ));
+  }
+
+  return (
+    <div style={{ marginBottom:4 }}>
+      <div onClick={onToggle} style={{
+        display:"flex", alignItems:"center", gap:10, padding:"8px 12px",
+        background:T.bg1, borderRadius: isOpen ? "5px 5px 0 0" : 5,
+        cursor:"pointer", border:`1px solid ${T.line}`, borderLeft:`3px solid ${accentColor}`,
+      }}>
+        <span style={{ fontSize:10, color:T.muted, transform: isOpen?"rotate(90deg)":"none",
+          transition:"transform 0.12s", display:"inline-block", flexShrink:0 }}>▶</span>
+        <span style={{ fontSize:13, color:T.body, fontWeight:600, flex:1 }}>{prefix}</span>
+        <span style={{ fontSize:11, color:T.muted }}>{items.length} people</span>
+      </div>
+      {isOpen && (
+        <div style={{ background:T.bg2, border:`1px solid ${T.line}`, borderTop:"none",
+          borderRadius:"0 0 5px 5px", padding:"4px 0" }}>
+          {items.map(t => {
+            const suffix = t.task.includes(" — ") ? t.task.split(" — ").slice(1).join(" — ") : t.task;
+            return (
+              <div key={t.id} style={{ display:"flex", alignItems:"center", gap:8, padding:"6px 12px 6px 32px" }}>
+                <StatusDot status={t.status} />
+                <span style={{ fontSize:12, color:t.status==="Done"?T.muted:T.body, flex:1 }}>{suffix}</span>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── ADVANCING VIEW ───────────────────────────────────────────────────────────
+function AdvancingView({ tourDays, tasks, travel }) {
+  const [viewMode,   setViewMode]   = useState("stop");   // "stop" | "category"
+  const [activeTab,  setActiveTab]  = useState("ADL");
+  const [activeStop, setActiveStop] = useState(null);     // dashboard highlight
+  const [collapsed,  setCollapsed]  = useState({});
+
+  const openTasks = tasks.filter(t => t.status !== "Done");
+  const allTasks  = tasks; // for progress calculation
+
+  const toggleGroup = key => setCollapsed(c => ({ ...c, [key]: !c[key] }));
+
+  // ── Build stop lookup: city → stop code
+  const dayToStop = {};
+  tourDays.forEach(d => { dayToStop[d.id] = cityToStop(d.city); });
+
+  // ── By Stop structure: { ADL: { Communication: { prefix: [tasks] } } }
+  const byStop = {};
+  STOP_ORDER.forEach(s => {
+    byStop[s] = {};
+    CAT_ORDER.forEach(c => { byStop[s][c] = {}; });
+  });
+  openTasks.forEach(t => {
+    const stop = t.dayId ? (dayToStop[t.dayId] || "General") : "General";
+    const cat  = CAT_GROUP[t.category] ? t.category : "Admin";
+    const prefix = taskPrefix(t.task);
+    if (!byStop[stop][cat][prefix]) byStop[stop][cat][prefix] = [];
+    byStop[stop][cat][prefix].push(t);
+  });
+
+  // ── By Category structure: { Communication: { ADL: { prefix: [tasks] } } }
+  const byCat = {};
+  CAT_ORDER.forEach(c => {
+    byCat[c] = {};
+    STOP_ORDER.forEach(s => { byCat[c][s] = {}; });
+  });
+  openTasks.forEach(t => {
+    const stop = t.dayId ? (dayToStop[t.dayId] || "General") : "General";
+    const cat  = CAT_GROUP[t.category] ? t.category : "Admin";
+    const prefix = taskPrefix(t.task);
+    if (!byCat[cat][stop][prefix]) byCat[cat][stop][prefix] = [];
+    byCat[cat][stop][prefix].push(t);
+  });
+
+  // ── Tab counts
+  const stopCounts = {};
+  STOP_ORDER.forEach(s => {
+    stopCounts[s] = CAT_ORDER.flatMap(c => Object.values(byStop[s][c])).flat().length;
+  });
+  const catCounts = {};
+  CAT_ORDER.forEach(c => {
+    catCounts[c] = STOP_ORDER.flatMap(s => Object.values(byCat[c][s])).flat().length;
+  });
+
+  const handleCardClick = stop => {
+    setActiveStop(stop === activeStop ? null : stop);
+    setViewMode("stop");
+    setActiveTab(stop);
+  };
+
+  // ── Tab config
+  const tabs     = viewMode === "stop" ? STOP_ORDER : CAT_ORDER;
+  const tabColor = tab => viewMode === "stop"
+    ? STOP_META[tab]?.color || T.muted
+    : CAT_GROUP[tab]?.color || T.muted;
+  const tabCount = tab => viewMode === "stop" ? stopCounts[tab] : catCounts[tab];
+
+  // ── Content renderer
+  const renderContent = () => {
+    if (viewMode === "stop") {
+      const groups = byStop[activeTab] || {};
+      return CAT_ORDER.map(cat => {
+        const prefixMap = groups[cat] || {};
+        if (!Object.keys(prefixMap).length) return null;
+        const accentColor = CAT_GROUP[cat]?.color || T.muted;
+        const total = Object.values(prefixMap).flat().length;
+        return (
+          <div key={cat} style={{ marginBottom:24 }}>
+            <div style={{ fontSize:10, color:accentColor, textTransform:"uppercase",
+              letterSpacing:"0.12em", fontWeight:700, marginBottom:8, paddingBottom:6,
+              borderBottom:`1px solid ${T.line}`, display:"flex", justifyContent:"space-between" }}>
+              <span>{cat}</span><span style={{ color:T.muted }}>{total}</span>
+            </div>
+            {Object.entries(prefixMap).map(([prefix, items]) => (
+              <PrefixGroup key={prefix} prefix={prefix} items={items} accentColor={accentColor}
+                collapsed={collapsed[`${activeTab}:${cat}:${prefix}`]}
+                onToggle={() => toggleGroup(`${activeTab}:${cat}:${prefix}`)} />
+            ))}
+          </div>
+        );
+      });
+    } else {
+      const groups = byCat[activeTab] || {};
+      return STOP_ORDER.map(stop => {
+        const prefixMap = groups[stop] || {};
+        if (!Object.keys(prefixMap).length) return null;
+        const meta = STOP_META[stop];
+        const total = Object.values(prefixMap).flat().length;
+        return (
+          <div key={stop} style={{ marginBottom:24 }}>
+            <div style={{ fontSize:10, fontWeight:700, textTransform:"uppercase",
+              letterSpacing:"0.12em", marginBottom:8, paddingBottom:6,
+              borderBottom:`1px solid ${T.line}`, display:"flex",
+              justifyContent:"space-between", alignItems:"center" }}>
+              <span style={{ display:"flex", alignItems:"center", gap:6 }}>
+                {stop !== "General" && <span style={{ width:6, height:6, borderRadius:"50%",
+                  background:meta.color, display:"inline-block" }} />}
+                <span style={{ color:meta.color }}>{stop}</span>
+              </span>
+              <span style={{ color:T.muted }}>{total}</span>
+            </div>
+            {Object.entries(prefixMap).map(([prefix, items]) => (
+              <PrefixGroup key={prefix} prefix={prefix} items={items}
+                accentColor={CAT_GROUP[activeTab]?.color || T.muted}
+                collapsed={collapsed[`${activeTab}:${stop}:${prefix}`]}
+                onToggle={() => toggleGroup(`${activeTab}:${stop}:${prefix}`)} />
+            ))}
+          </div>
+        );
+      });
+    }
+  };
+
+  return (
+    <div style={{ flex:1, display:"flex", flexDirection:"column", overflowY:"auto" }}>
+      {/* Header */}
+      <div style={{ padding:"24px 28px 0", borderBottom:`1px solid ${T.line}` }}>
+        <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:16 }}>
+          <h1 style={{ fontSize:18, fontWeight:700, color:T.heading, margin:0 }}>Advancing</h1>
+          <span style={{ fontSize:10, fontWeight:700, padding:"2px 8px", background:"#1e1a0a",
+            color:T.amber, borderRadius:3, letterSpacing:"0.08em", border:`1px solid ${T.amberBdr}` }}>PRIVATE</span>
+          <div style={{ marginLeft:"auto", display:"flex", gap:2, background:T.bg2, borderRadius:6, padding:3 }}>
+            {[["stop","By Stop"],["category","By Category"]].map(([mode, label]) => (
+              <button key={mode} onClick={() => { setViewMode(mode); setActiveTab(mode==="stop"?"ADL":"Communication"); }} style={{
+                padding:"5px 12px", borderRadius:4, border:"none", cursor:"pointer",
+                fontSize:11, fontWeight:600, textTransform:"uppercase", letterSpacing:"0.07em",
+                background: viewMode===mode ? T.bg3 : "transparent",
+                color: viewMode===mode ? T.heading : T.muted,
+              }}>{label}</button>
+            ))}
+          </div>
+        </div>
+
+        {/* Tabs */}
+        <div style={{ display:"flex", gap:0, overflowX:"auto" }}>
+          {tabs.map(tab => {
+            const isActive = activeTab === tab;
+            const color = tabColor(tab);
+            const count = tabCount(tab);
+            return (
+              <button key={tab} onClick={() => setActiveTab(tab)} style={{
+                background:"none", border:"none", cursor:"pointer",
+                padding:"8px 16px", whiteSpace:"nowrap",
+                fontSize:11, fontWeight: isActive ? 700 : 400,
+                color: isActive ? color : T.muted,
+                borderBottom: isActive ? `2px solid ${color}` : "2px solid transparent",
+                letterSpacing:"0.07em", textTransform:"uppercase",
+              }}>
+                {tab}
+                {count > 0 && (
+                  <span style={{ marginLeft:5, fontSize:10,
+                    color: isActive ? color : T.muted, opacity:0.7 }}>{count}</span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Dashboard */}
+      <StopDashboard tasks={allTasks} tourDays={tourDays}
+        onSelectStop={handleCardClick} activeStop={activeStop} />
+
+      {/* Task list */}
+      <div style={{ padding:"20px 28px", flex:1 }}>
+        {renderContent()}
+      </div>
+    </div>
+  );
+}
 
 // ─── PACKLIST DATA ────────────────────────────────────────────────────────────
 const PACKLIST = {
@@ -204,91 +471,51 @@ const PACKLIST = {
     "iPad (stage tech position)",
     "iPad (Jeff — FOH, Option B only)",
   ],
-  "Audio": [
-    "Stage box + multicore",
-    "DI boxes (as above)",
-    "Spare XLRs (x6)",
-    "Gaffer tape",
-    "Cable ties",
-  ],
-  "Backline": [
-    "Guitar amps (confirm with AC, MD)",
-    "Bass amp (confirm with DS)",
-    "Jazz amp for synth (Mathias)",
-    "Spare tubes / fuses",
-  ],
-  "Merchandise": [
-    "Merch stock (confirm count with management)",
-    "Cash float",
-    "Card reader",
-    "Merch display / hangers",
-  ],
-  "Admin": [
-    "Rider copies (hard + digital)",
-    "Stage plot (current version)",
-    "Input list",
-    "Emergency contacts list",
-    "First aid kit",
-  ],
+  "Audio": ["Stage box + multicore","DI boxes (as above)","Spare XLRs (x6)","Gaffer tape","Cable ties"],
+  "Backline": ["Guitar amps (confirm with AC, MD)","Bass amp (confirm with DS)","Jazz amp for synth (Mathias)","Spare tubes / fuses"],
+  "Merchandise": ["Merch stock (confirm count with management)","Cash float","Card reader","Merch display / hangers"],
+  "Admin": ["Rider copies (hard + digital)","Stage plot (current version)","Input list","Emergency contacts list","First aid kit"],
 };
 
 const BACKLINE = [
-  { item: "Guitar amp 1", spec: "TBC — Alex Cameron", status: "TBC" },
-  { item: "Guitar amp 2", spec: "TBC — Mathias Dowle", status: "TBC" },
-  { item: "Bass amp", spec: "TBC — Deon Slaviero", status: "TBC" },
-  { item: "Jazz amp (synth)", spec: "Dedicated stage amp, not DI", status: "Confirmed — AC" },
-  { item: "Drum kit", spec: "Mathias Dowle / Miles Wilson", status: "TBC" },
-  { item: "SPD-SX", spec: "Mathias Dowle — personal unit", status: "Confirmed" },
-  { item: "Synth", spec: "Mathias Dowle — personal unit", status: "Confirmed" },
+  { item:"Guitar amp 1",  spec:"TBC — Alex Cameron",         status:"TBC" },
+  { item:"Guitar amp 2",  spec:"TBC — Mathias Dowle",        status:"TBC" },
+  { item:"Bass amp",      spec:"TBC — Deon Slaviero",        status:"TBC" },
+  { item:"Jazz amp (synth)", spec:"Dedicated stage amp, not DI", status:"Confirmed — AC" },
+  { item:"Drum kit",      spec:"Mathias Dowle / Miles Wilson",status:"TBC" },
+  { item:"SPD-SX",        spec:"Mathias Dowle — personal unit",status:"Confirmed" },
+  { item:"Synth",         spec:"Mathias Dowle — personal unit",status:"Confirmed" },
 ];
 
-// ─── FORMS DATA ───────────────────────────────────────────────────────────────
 const FORMS = [
-  {
-    id: "travel",
-    title: "Travel Details",
-    desc: "Collect passport, frequent flyer, dietary, and emergency contact info from all travellers.",
-    fields: ["Full legal name", "Passport number", "Passport expiry", "Frequent flyer number", "Dietary requirements", "Emergency contact name", "Emergency contact phone"],
-    recipients: "Band + Crew",
-    status: "Not sent",
-  },
-  {
-    id: "gear",
-    title: "Gear Needs",
-    desc: "Confirm what each member needs provided vs. bringing own.",
-    fields: ["Instrument(s)", "Amp requirements", "In-ear monitoring (Yes/No/If track)", "IEM brand/model preference", "Any special requirements"],
-    recipients: "Band + Crew",
-    status: "Not sent",
-  },
-  {
-    id: "avail",
-    title: "Rehearsal Availability",
-    desc: "Collect availability for pre-tour rehearsal dates in Adelaide.",
-    fields: ["Available dates (Apr 7–9)", "Location constraints", "Notes"],
-    recipients: "Band",
-    status: "Not sent",
-  },
+  { id:"travel", title:"Travel Details",
+    desc:"Collect passport, frequent flyer, dietary, and emergency contact info from all travellers.",
+    fields:["Full legal name","Passport number","Passport expiry","Frequent flyer number","Dietary requirements","Emergency contact name","Emergency contact phone"],
+    recipients:"Band + Crew", status:"Not sent" },
+  { id:"gear", title:"Gear Needs",
+    desc:"Confirm what each member needs provided vs. bringing own.",
+    fields:["Instrument(s)","Amp requirements","In-ear monitoring (Yes/No/If track)","IEM brand/model preference","Any special requirements"],
+    recipients:"Band + Crew", status:"Not sent" },
+  { id:"avail", title:"Rehearsal Availability",
+    desc:"Collect availability for pre-tour rehearsal dates in Adelaide.",
+    fields:["Available dates (Apr 7–9)","Location constraints","Notes"],
+    recipients:"Band", status:"Not sent" },
 ];
 
-// ─── ADVANCING TOKEN ─────────────────────────────────────────────────────────
 const ADV_TOKEN = "adv2026ud";
 const isAdvancing = () => {
-  try {
-    const params = new URLSearchParams(window.location.search);
-    return params.get("adv") === ADV_TOKEN;
-  } catch { return false; }
+  try { return new URLSearchParams(window.location.search).get("adv") === ADV_TOKEN; }
+  catch { return false; }
 };
 
 // ─── CALENDAR VIEW ────────────────────────────────────────────────────────────
 function CalendarView({ tourDays, onSelectDay }) {
   const [viewMode, setViewMode] = useState("list");
-
-  const sorted = [...tourDays].sort((a, b) => (a.date || "").localeCompare(b.date || ""));
-
+  const sorted = [...tourDays].sort((a,b) => (a.date||"").localeCompare(b.date||""));
   const byMonth = {};
   sorted.forEach(d => {
     if (!d.date) return;
-    const key = d.date.slice(0, 7);
+    const key = d.date.slice(0,7);
     if (!byMonth[key]) byMonth[key] = [];
     byMonth[key].push(d);
   });
@@ -296,205 +523,184 @@ function CalendarView({ tourDays, onSelectDay }) {
   const upcoming = sorted.find(d => daysFrom(d.date) >= 0);
 
   return (
-    <div style={{ flex: 1, display: "flex", flexDirection: "column", overflowY: "auto" }}>
-      <div style={{ padding: "24px 28px 16px", borderBottom: `1px solid ${T.line}`, display: "flex", alignItems: "center", gap: 16 }}>
+    <div style={{ flex:1, display:"flex", flexDirection:"column", overflowY:"auto" }}>
+      <div style={{ padding:"24px 28px 16px", borderBottom:`1px solid ${T.line}`, display:"flex", alignItems:"center", gap:16 }}>
         <div>
-          <h1 style={{ fontSize: 18, fontWeight: 700, color: T.heading, margin: 0 }}>Tour Schedule</h1>
-          <p style={{ fontSize: 12, color: T.muted, marginTop: 3 }}>Ultra Dundee · April 9 – May 9, 2026</p>
+          <h1 style={{ fontSize:18, fontWeight:700, color:T.heading, margin:0 }}>Tour Schedule</h1>
+          <p style={{ fontSize:12, color:T.muted, marginTop:3 }}>Ultra Dundee · April 9 – May 9, 2026</p>
         </div>
-        <div style={{ marginLeft: "auto", display: "flex", gap: 4, background: T.bg2, borderRadius: 6, padding: 3 }}>
-          {["list", "month"].map(m => (
+        <div style={{ marginLeft:"auto", display:"flex", gap:4, background:T.bg2, borderRadius:6, padding:3 }}>
+          {["list","month"].map(m => (
             <button key={m} onClick={() => setViewMode(m)} style={{
-              padding: "5px 14px", borderRadius: 4, border: "none", cursor: "pointer",
-              fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em",
-              background: viewMode === m ? T.bg3 : "transparent",
-              color: viewMode === m ? T.heading : T.muted,
+              padding:"5px 14px", borderRadius:4, border:"none", cursor:"pointer",
+              fontSize:11, fontWeight:600, textTransform:"uppercase", letterSpacing:"0.07em",
+              background: viewMode===m ? T.bg3 : "transparent",
+              color: viewMode===m ? T.heading : T.muted,
             }}>{m}</button>
           ))}
         </div>
       </div>
 
       {upcoming && (
-        <div style={{ margin: "16px 28px 0", background: (CITY[upcoming.city] || CITY.Adelaide).bg, border: `1px solid ${(CITY[upcoming.city] || CITY.Adelaide).border}`, borderRadius: 8, padding: "12px 16px", display: "flex", alignItems: "center", gap: 12 }}>
+        <div style={{ margin:"16px 28px 0", background:(CITY[upcoming.city]||CITY.Adelaide).bg,
+          border:`1px solid ${(CITY[upcoming.city]||CITY.Adelaide).border}`, borderRadius:8,
+          padding:"12px 16px", display:"flex", alignItems:"center", gap:12 }}>
           <Dot city={upcoming.city} size={8} />
           <div>
-            <span style={{ fontSize: 11, color: T.muted, textTransform: "uppercase", letterSpacing: "0.08em" }}>Next up</span>
-            <div style={{ fontSize: 14, fontWeight: 700, color: T.heading, marginTop: 1 }}>{upcoming.name}</div>
-            <div style={{ fontSize: 12, color: T.subtle }}>{fmtDate(upcoming.date)} · {upcoming.venue}</div>
+            <span style={{ fontSize:11, color:T.muted, textTransform:"uppercase", letterSpacing:"0.08em" }}>Next up</span>
+            <div style={{ fontSize:14, fontWeight:700, color:T.heading, marginTop:1 }}>{upcoming.name}</div>
+            <div style={{ fontSize:12, color:T.subtle }}>{fmtDate(upcoming.date)} · {upcoming.venue}</div>
           </div>
-          <div style={{ marginLeft: "auto", textAlign: "right" }}>
-            <div style={{ fontSize: 28, fontWeight: 800, color: (CITY[upcoming.city] || CITY.Adelaide).accent, lineHeight: 1 }}>
+          <div style={{ marginLeft:"auto", textAlign:"right" }}>
+            <div style={{ fontSize:28, fontWeight:800, color:(CITY[upcoming.city]||CITY.Adelaide).accent, lineHeight:1 }}>
               {daysFrom(upcoming.date)}
             </div>
-            <div style={{ fontSize: 10, color: T.muted, textTransform: "uppercase", letterSpacing: "0.07em" }}>days</div>
+            <div style={{ fontSize:10, color:T.muted, textTransform:"uppercase", letterSpacing:"0.07em" }}>days</div>
           </div>
         </div>
       )}
 
-      <div style={{ padding: "16px 28px 28px" }}>
-        {viewMode === "list" ? (
-          months.map(monthKey => (
-            <div key={monthKey} style={{ marginBottom: 28 }}>
-              <div style={{ fontSize: 11, color: T.muted, textTransform: "uppercase", letterSpacing: "0.1em", fontWeight: 700, marginBottom: 10, paddingBottom: 6, borderBottom: `1px solid ${T.line}` }}>
-                {fmtMonth(monthKey + "-01")}
+      <div style={{ padding:"16px 28px 28px" }}>
+        {viewMode === "list" ? months.map(monthKey => (
+          <div key={monthKey} style={{ marginBottom:28 }}>
+            <div style={{ fontSize:11, color:T.muted, textTransform:"uppercase", letterSpacing:"0.1em",
+              fontWeight:700, marginBottom:10, paddingBottom:6, borderBottom:`1px solid ${T.line}` }}>
+              {fmtMonth(monthKey+"-01")}
+            </div>
+            <div style={{ display:"flex", flexDirection:"column", gap:4 }}>
+              {byMonth[monthKey].map(d => {
+                const c = CITY[d.city]||CITY.Adelaide;
+                const du = daysFrom(d.date);
+                const isPast = du !== null && du < 0;
+                return (
+                  <div key={d.id} onClick={() => onSelectDay(d)} style={{
+                    display:"flex", alignItems:"center", gap:12, padding:"10px 14px",
+                    background:T.bg1, borderRadius:6, cursor:"pointer",
+                    border:`1px solid ${T.line}`, opacity: isPast ? 0.45 : 1,
+                    transition:"background 0.12s, border-color 0.12s",
+                  }}
+                    onMouseEnter={e => { e.currentTarget.style.background=T.bg2; e.currentTarget.style.borderColor=c.border; }}
+                    onMouseLeave={e => { e.currentTarget.style.background=T.bg1; e.currentTarget.style.borderColor=T.line; }}
+                  >
+                    <div style={{ width:3, alignSelf:"stretch", borderRadius:2, background:c.accent, flexShrink:0 }} />
+                    <div style={{ width:52, flexShrink:0 }}>
+                      <div style={{ fontSize:11, color:T.muted }}>{fmtDate(d.date,{weekday:"short"}).split(",")[0]}</div>
+                      <div style={{ fontSize:13, fontWeight:700, color:T.body }}>{fmtDate(d.date,{day:"numeric",month:"short"})}</div>
+                    </div>
+                    <div style={{ flex:1, minWidth:0 }}>
+                      <div style={{ fontSize:13, fontWeight:600, color:T.heading, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{d.name}</div>
+                      <div style={{ fontSize:11, color:T.subtle, display:"flex", alignItems:"center", gap:5, marginTop:2 }}>
+                        <Dot city={d.city} size={6} />
+                        {cityLabel(d.city)||d.city}{d.venue ? ` · ${d.venue}` : ""}
+                      </div>
+                    </div>
+                    <div style={{ display:"flex", gap:6, alignItems:"center", flexShrink:0 }}>
+                      <Badge text={d.type} type={d.type} />
+                      {du !== null && du >= 0 && <span style={{ fontSize:10, color:T.muted, fontVariantNumeric:"tabular-nums" }}>{du===0?"today":`${du}d`}</span>}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )) : months.map(monthKey => {
+          const firstDay = new Date(monthKey+"-01T00:00:00");
+          const startDow = firstDay.getDay();
+          const daysInMonth = new Date(firstDay.getFullYear(), firstDay.getMonth()+1, 0).getDate();
+          const cells = Array(startDow===0 ? 6 : startDow-1).fill(null);
+          for (let i=1; i<=daysInMonth; i++) cells.push(i);
+          while (cells.length%7!==0) cells.push(null);
+          return (
+            <div key={monthKey} style={{ marginBottom:32 }}>
+              <div style={{ fontSize:13, fontWeight:700, color:T.heading, marginBottom:12 }}>{fmtMonth(monthKey+"-01")}</div>
+              <div style={{ display:"grid", gridTemplateColumns:"repeat(7, 1fr)", gap:3, marginBottom:6 }}>
+                {["M","T","W","T","F","S","S"].map((d,i) => (
+                  <div key={i} style={{ fontSize:10, color:T.muted, textAlign:"center", paddingBottom:4, fontWeight:600 }}>{d}</div>
+                ))}
               </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                {byMonth[monthKey].map(d => {
-                  const c = CITY[d.city] || CITY.Adelaide;
-                  const du = daysFrom(d.date);
-                  const isPast = du !== null && du < 0;
+              <div style={{ display:"grid", gridTemplateColumns:"repeat(7, 1fr)", gap:3 }}>
+                {cells.map((day,i) => {
+                  if (!day) return <div key={i} />;
+                  const iso = `${monthKey}-${String(day).padStart(2,"0")}`;
+                  const events = byMonth[monthKey]?.filter(d => d.date===iso)||[];
+                  const hasEvent = events.length>0;
+                  const c = hasEvent ? (CITY[events[0].city]||CITY.Adelaide) : null;
                   return (
-                    <div key={d.id} onClick={() => onSelectDay(d)} style={{
-                      display: "flex", alignItems: "center", gap: 12, padding: "10px 14px",
-                      background: T.bg1, borderRadius: 6, cursor: "pointer",
-                      border: `1px solid ${T.line}`, opacity: isPast ? 0.45 : 1,
-                      transition: "background 0.12s, border-color 0.12s",
-                    }}
-                      onMouseEnter={e => { e.currentTarget.style.background = T.bg2; e.currentTarget.style.borderColor = c.border; }}
-                      onMouseLeave={e => { e.currentTarget.style.background = T.bg1; e.currentTarget.style.borderColor = T.line; }}
-                    >
-                      <div style={{ width: 3, alignSelf: "stretch", borderRadius: 2, background: c.accent, flexShrink: 0 }} />
-                      <div style={{ width: 52, flexShrink: 0 }}>
-                        <div style={{ fontSize: 11, color: T.muted }}>{fmtDate(d.date, { weekday: "short" }).split(",")[0]}</div>
-                        <div style={{ fontSize: 13, fontWeight: 700, color: T.body }}>{fmtDate(d.date, { day: "numeric", month: "short" })}</div>
-                      </div>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: 13, fontWeight: 600, color: T.heading, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{d.name}</div>
-                        <div style={{ fontSize: 11, color: T.subtle, display: "flex", alignItems: "center", gap: 5, marginTop: 2 }}>
-                          <Dot city={d.city} size={6} />
-                          {cityLabel(d.city) || d.city}{d.venue ? ` · ${d.venue}` : ""}
-                        </div>
-                      </div>
-                      <div style={{ display: "flex", gap: 6, alignItems: "center", flexShrink: 0 }}>
-                        <Badge text={d.type} type={d.type} />
-                        {du !== null && du >= 0 && <span style={{ fontSize: 10, color: T.muted, fontVariantNumeric: "tabular-nums" }}>{du === 0 ? "today" : `${du}d`}</span>}
-                      </div>
+                    <div key={i} onClick={() => hasEvent && onSelectDay(events[0])} style={{
+                      aspectRatio:"1", borderRadius:5, display:"flex", flexDirection:"column",
+                      alignItems:"center", justifyContent:"center",
+                      background: hasEvent ? c.bg : T.bg1,
+                      border:`1px solid ${hasEvent ? c.border : T.line}`,
+                      cursor: hasEvent ? "pointer" : "default",
+                    }}>
+                      <span style={{ fontSize:12, fontWeight: hasEvent?700:400, color: hasEvent?c.accent:T.muted }}>{day}</span>
+                      {hasEvent && <span style={{ width:4, height:4, borderRadius:"50%", background:c.accent, marginTop:2 }} />}
                     </div>
                   );
                 })}
               </div>
             </div>
-          ))
-        ) : (
-          months.map(monthKey => {
-            const firstDay = new Date(monthKey + "-01T00:00:00");
-            const startDow = firstDay.getDay();
-            const daysInMonth = new Date(firstDay.getFullYear(), firstDay.getMonth() + 1, 0).getDate();
-            const cells = Array(startDow === 0 ? 6 : startDow - 1).fill(null);
-            for (let i = 1; i <= daysInMonth; i++) cells.push(i);
-            while (cells.length % 7 !== 0) cells.push(null);
-
-            return (
-              <div key={monthKey} style={{ marginBottom: 32 }}>
-                <div style={{ fontSize: 13, fontWeight: 700, color: T.heading, marginBottom: 12 }}>{fmtMonth(monthKey + "-01")}</div>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 3, marginBottom: 6 }}>
-                  {["M","T","W","T","F","S","S"].map((d,i) => (
-                    <div key={i} style={{ fontSize: 10, color: T.muted, textAlign: "center", paddingBottom: 4, fontWeight: 600 }}>{d}</div>
-                  ))}
-                </div>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 3 }}>
-                  {cells.map((day, i) => {
-                    if (!day) return <div key={i} />;
-                    const iso = `${monthKey}-${String(day).padStart(2, "0")}`;
-                    const events = byMonth[monthKey]?.filter(d => d.date === iso) || [];
-                    const hasEvent = events.length > 0;
-                    const c = hasEvent ? (CITY[events[0].city] || CITY.Adelaide) : null;
-                    return (
-                      <div key={i} onClick={() => hasEvent && onSelectDay(events[0])} style={{
-                        aspectRatio: "1", borderRadius: 5, display: "flex", flexDirection: "column",
-                        alignItems: "center", justifyContent: "center", position: "relative",
-                        background: hasEvent ? c.bg : T.bg1,
-                        border: `1px solid ${hasEvent ? c.border : T.line}`,
-                        cursor: hasEvent ? "pointer" : "default",
-                      }}>
-                        <span style={{ fontSize: 12, fontWeight: hasEvent ? 700 : 400, color: hasEvent ? c.accent : T.muted }}>{day}</span>
-                        {hasEvent && <span style={{ width: 4, height: 4, borderRadius: "50%", background: c.accent, marginTop: 2 }} />}
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            );
-          })
-        )}
+          );
+        })}
       </div>
     </div>
   );
 }
 
-// ─── DAY DETAIL PANEL ─────────────────────────────────────────────────────────
+// ─── DAY DETAIL ───────────────────────────────────────────────────────────────
 function DayDetail({ day, tasks, travel, onClose }) {
   if (!day) return null;
-  const c = CITY[day.city] || CITY.Adelaide;
+  const c = CITY[day.city]||CITY.Adelaide;
   const dayTasks  = tasks.filter(t => day.taskIds.includes(t.id));
   const dayTravel = travel.filter(t => t.dayIds.includes(day.id));
-
   return (
-    <div style={{
-      width: 340, flexShrink: 0, borderLeft: `1px solid ${T.line}`,
-      background: T.bg1, overflowY: "auto", display: "flex", flexDirection: "column",
-    }}>
-      <div style={{ padding: "16px 18px", borderBottom: `1px solid ${T.line}`, background: c.bg }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+    <div style={{ width:340, flexShrink:0, borderLeft:`1px solid ${T.line}`,
+      background:T.bg1, overflowY:"auto", display:"flex", flexDirection:"column" }}>
+      <div style={{ padding:"16px 18px", borderBottom:`1px solid ${T.line}`, background:c.bg }}>
+        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start" }}>
           <div>
-            <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 5 }}>
+            <div style={{ display:"flex", alignItems:"center", gap:7, marginBottom:5 }}>
               <Dot city={day.city} size={8} />
-              <span style={{ fontSize: 11, color: c.accent, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em" }}>{cityLabel(day.city) || day.city}</span>
+              <span style={{ fontSize:11, color:c.accent, fontWeight:700, textTransform:"uppercase", letterSpacing:"0.08em" }}>{cityLabel(day.city)||day.city}</span>
               <Badge text={day.type} type={day.type} />
             </div>
-            <div style={{ fontSize: 16, fontWeight: 700, color: T.heading }}>{day.name}</div>
-            <div style={{ fontSize: 12, color: T.subtle, marginTop: 3 }}>{fmtDate(day.date)}{day.venue ? ` · ${day.venue}` : ""}</div>
+            <div style={{ fontSize:16, fontWeight:700, color:T.heading }}>{day.name}</div>
+            <div style={{ fontSize:12, color:T.subtle, marginTop:3 }}>{fmtDate(day.date)}{day.venue?` · ${day.venue}`:""}</div>
           </div>
-          <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: T.muted, fontSize: 18, padding: "0 0 0 8px" }}>×</button>
+          <button onClick={onClose} style={{ background:"none", border:"none", cursor:"pointer", color:T.muted, fontSize:18, padding:"0 0 0 8px" }}>×</button>
         </div>
       </div>
-
-      <div style={{ padding: "16px 18px", flex: 1 }}>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, marginBottom: 16 }}>
-          {[["Load-in", day.loadin], ["Soundcheck", day.soundcheck], ["Doors", day.doors], ["Set time", day.settime], ["Curfew", day.curfew], ["Set length", day.setlength]].map(([lbl, val]) => (
-            <div key={lbl} style={{ background: T.bg2, borderRadius: 5, padding: "8px 10px" }}>
-              <div style={{ fontSize: 10, color: T.muted, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 2 }}>{lbl}</div>
-              <div style={{ fontSize: 13, fontWeight: 600, color: val ? T.heading : T.bg3 }}>{val || "TBC"}</div>
+      <div style={{ padding:"16px 18px", flex:1 }}>
+        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:6, marginBottom:16 }}>
+          {[["Load-in",day.loadin],["Soundcheck",day.soundcheck],["Doors",day.doors],["Set time",day.settime],["Curfew",day.curfew],["Set length",day.setlength]].map(([lbl,val]) => (
+            <div key={lbl} style={{ background:T.bg2, borderRadius:5, padding:"8px 10px" }}>
+              <div style={{ fontSize:10, color:T.muted, textTransform:"uppercase", letterSpacing:"0.07em", marginBottom:2 }}>{lbl}</div>
+              <div style={{ fontSize:13, fontWeight:600, color:val?T.heading:T.bg3 }}>{val||"TBC"}</div>
             </div>
           ))}
         </div>
-
-        {day.supports && (
-          <div style={{ marginBottom: 14 }}>
-            <SectionLabel>Support</SectionLabel>
-            <div style={{ fontSize: 13, color: T.body }}>{day.supports}</div>
-          </div>
-        )}
-
-        {day.notes && (
-          <div style={{ background: T.bg2, borderRadius: 5, padding: "10px 12px", marginBottom: 16, fontSize: 12, color: T.subtle, lineHeight: 1.65 }}>
-            {day.notes}
-          </div>
-        )}
-
+        {day.supports && <div style={{ marginBottom:14 }}><SectionLabel>Support</SectionLabel><div style={{ fontSize:13, color:T.body }}>{day.supports}</div></div>}
+        {day.notes && <div style={{ background:T.bg2, borderRadius:5, padding:"10px 12px", marginBottom:16, fontSize:12, color:T.subtle, lineHeight:1.65 }}>{day.notes}</div>}
         {dayTravel.length > 0 && (
-          <div style={{ marginBottom: 16 }}>
+          <div style={{ marginBottom:16 }}>
             <SectionLabel>Travel ({dayTravel.length})</SectionLabel>
             {dayTravel.map(t => (
-              <div key={t.id} style={{ background: T.bg2, borderRadius: 5, padding: "9px 11px", marginBottom: 5 }}>
-                <div style={{ fontSize: 12, fontWeight: 600, color: T.heading, marginBottom: 3 }}>{t.passengers.join(", ")}</div>
-                <div style={{ fontSize: 11, color: T.subtle }}>{t.from} → {t.to}{t.dep ? ` · ${t.dep}` : ""}{t.arr ? ` – ${t.arr}` : ""}</div>
-                {t.flightNo && <div style={{ fontFamily: "monospace", fontSize: 11, color: T.blue, marginTop: 3 }}>{t.flightNo}{t.ref ? ` · ${t.ref}` : ""}</div>}
+              <div key={t.id} style={{ background:T.bg2, borderRadius:5, padding:"9px 11px", marginBottom:5 }}>
+                <div style={{ fontSize:12, fontWeight:600, color:T.heading, marginBottom:3 }}>{t.passengers.join(", ")}</div>
+                <div style={{ fontSize:11, color:T.subtle }}>{t.from} → {t.to}{t.dep?` · ${t.dep}`:""}{t.arr?` – ${t.arr}`:""}</div>
+                {t.flightNo && <div style={{ fontFamily:"monospace", fontSize:11, color:T.blue, marginTop:3 }}>{t.flightNo}{t.ref?` · ${t.ref}`:""}</div>}
               </div>
             ))}
           </div>
         )}
-
         {dayTasks.length > 0 && (
           <div>
             <SectionLabel>Tasks ({dayTasks.length})</SectionLabel>
             {dayTasks.map(t => (
-              <div key={t.id} style={{ display: "flex", alignItems: "flex-start", gap: 8, padding: "6px 0", borderBottom: `1px solid ${T.line}` }}>
+              <div key={t.id} style={{ display:"flex", alignItems:"flex-start", gap:8, padding:"6px 0", borderBottom:`1px solid ${T.line}` }}>
                 <StatusDot status={t.status} />
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 12, color: t.status === "Done" ? T.muted : T.body }}>{t.task}</div>
-                </div>
-                <span style={{ fontSize: 10, color: (CAT_GROUP[t.category] || { color: T.muted }).color, flexShrink: 0 }}>{t.category}</span>
+                <div style={{ flex:1 }}><div style={{ fontSize:12, color:t.status==="Done"?T.muted:T.body }}>{t.task}</div></div>
+                <span style={{ fontSize:10, color:(CAT_GROUP[t.category]||{color:T.muted}).color, flexShrink:0 }}>{t.category}</span>
               </div>
             ))}
           </div>
@@ -506,58 +712,44 @@ function DayDetail({ day, tasks, travel, onClose }) {
 
 // ─── VENUES VIEW ─────────────────────────────────────────────────────────────
 function VenuesView({ tourDays }) {
-  const showDays = tourDays.filter(d => d.type === "Show" || d.type === "Festival");
+  const showDays = tourDays.filter(d => d.type==="Show"||d.type==="Festival");
   const [sel, setSel] = useState(null);
-
   const VENUE_NOTES = {
-    "Gather Sounds": { address: "Adelaide University, Adelaide SA 5000", type: "Festival site", prodContact: "Gus Smith (audio) via GA Entertainment", promoContact: "Gareth Lewis — GA Entertainment", notes: "GA Entertainment running all production. TM coordinates Bad Dreems slot only: set times, load-in, soundcheck window. No split system. Jeff liaising directly with Gus on PA." },
-    "Thornbury Theatre": { address: "868 High St, Thornbury VIC 3071", type: "Theatre", prodContact: "In-house FOH + LX at $55 inc GST/hr", promoContact: "TBC", notes: "Lighting package $195 flat. Security 50/50 split. OneMusic 1.65% of total sales. Hospitality up to $200 inc GST. Backline: Bad Dreems own." },
-    "Marrickville Bowling Club": { address: "533 Illawarra Rd, Marrickville NSW 2204", type: "Club", prodContact: "FOH + LX FOC (set & forget lighting)", promoContact: "TBC", notes: "Sound curfew 6:30–7:30pm — no soundcheck in that window. Door staff: performer provides and pays. ⚠ Not yet sourced. Backline: Bad Dreems own." },
-    "The Brightside (Outdoors)": { address: "27 Warner St, Fortitude Valley QLD 4006", type: "Outdoor", prodContact: "FOH FOC", promoContact: "TBC", notes: "No split system — Jeff at FOH for monitors. LX: ⚠ decision needed — venue $440 inc GST or source own. Door staff: venue FOC. Outdoor — weather contingency to discuss." },
+    "Gather Sounds": { address:"Adelaide University, Adelaide SA 5000", prodContact:"Gus Smith (audio) via GA Entertainment", promoContact:"Gareth Lewis — GA Entertainment", notes:"GA Entertainment running all production. TM coordinates Bad Dreems slot only." },
+    "Thornbury Theatre": { address:"868 High St, Thornbury VIC 3071", prodContact:"In-house FOH + LX at $55 inc GST/hr", promoContact:"TBC", notes:"Lighting package $195 flat. Security 50/50 split. OneMusic 1.65% of total sales. Hospitality up to $200 inc GST." },
+    "Marrickville Bowling Club": { address:"533 Illawarra Rd, Marrickville NSW 2204", prodContact:"FOH + LX FOC (set & forget lighting)", promoContact:"TBC", notes:"Sound curfew 6:30–7:30pm. Door staff: performer provides. ⚠ Not yet sourced." },
+    "The Brightside (Outdoors)": { address:"27 Warner St, Fortitude Valley QLD 4006", prodContact:"FOH FOC", promoContact:"TBC", notes:"No split system — Jeff at FOH for monitors. LX: ⚠ decision needed — venue $440 inc GST or source own." },
   };
-
   return (
-    <div style={{ flex: 1, display: "flex", flexDirection: "column", overflowY: "auto" }}>
-      <div style={{ padding: "24px 28px 16px", borderBottom: `1px solid ${T.line}` }}>
-        <h1 style={{ fontSize: 18, fontWeight: 700, color: T.heading, margin: 0 }}>Venues</h1>
-        <p style={{ fontSize: 12, color: T.muted, marginTop: 3 }}>{showDays.length} shows</p>
+    <div style={{ flex:1, display:"flex", flexDirection:"column", overflowY:"auto" }}>
+      <div style={{ padding:"24px 28px 16px", borderBottom:`1px solid ${T.line}` }}>
+        <h1 style={{ fontSize:18, fontWeight:700, color:T.heading, margin:0 }}>Venues</h1>
+        <p style={{ fontSize:12, color:T.muted, marginTop:3 }}>{showDays.length} shows</p>
       </div>
-      <div style={{ padding: "20px 28px", display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 12 }}>
+      <div style={{ padding:"20px 28px", display:"grid", gridTemplateColumns:"repeat(auto-fill, minmax(280px, 1fr))", gap:12 }}>
         {showDays.map(d => {
-          const c = CITY[d.city] || CITY.Adelaide;
-          const vn = VENUE_NOTES[d.venue] || {};
+          const c = CITY[d.city]||CITY.Adelaide;
+          const vn = VENUE_NOTES[d.venue]||{};
           return (
-            <div key={d.id} onClick={() => setSel(sel === d.id ? null : d.id)} style={{
-              background: T.bg1, border: `1px solid ${sel === d.id ? c.border : T.line}`,
-              borderTop: `3px solid ${c.accent}`, borderRadius: 7, padding: "16px 18px",
-              cursor: "pointer", transition: "border-color 0.12s",
-            }}>
-              <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8, marginBottom: 8 }}>
+            <div key={d.id} onClick={() => setSel(sel===d.id?null:d.id)} style={{
+              background:T.bg1, border:`1px solid ${sel===d.id?c.border:T.line}`,
+              borderTop:`3px solid ${c.accent}`, borderRadius:7, padding:"16px 18px", cursor:"pointer" }}>
+              <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", gap:8, marginBottom:8 }}>
                 <div>
-                  <div style={{ fontSize: 14, fontWeight: 700, color: T.heading }}>{d.venue || "TBC"}</div>
-                  <div style={{ fontSize: 11, color: c.accent, display: "flex", alignItems: "center", gap: 5, marginTop: 3 }}>
-                    <Dot city={d.city} size={6} />{cityLabel(d.city) || d.city}
+                  <div style={{ fontSize:14, fontWeight:700, color:T.heading }}>{d.venue||"TBC"}</div>
+                  <div style={{ fontSize:11, color:c.accent, display:"flex", alignItems:"center", gap:5, marginTop:3 }}>
+                    <Dot city={d.city} size={6} />{cityLabel(d.city)||d.city}
                   </div>
                 </div>
                 <Badge text={d.type} type={d.type} />
               </div>
-              <div style={{ fontSize: 12, color: T.muted, marginBottom: 8 }}>{fmtDate(d.date)}</div>
-              {vn.address && <div style={{ fontSize: 11, color: T.subtle, marginBottom: 8, lineHeight: 1.5 }}>{vn.address}</div>}
-              {sel === d.id && (
-                <div style={{ marginTop: 10, borderTop: `1px solid ${T.line}`, paddingTop: 10 }}>
-                  {vn.prodContact && (
-                    <div style={{ marginBottom: 7 }}>
-                      <div style={{ fontSize: 10, color: T.muted, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 2 }}>Production</div>
-                      <div style={{ fontSize: 12, color: T.body }}>{vn.prodContact}</div>
-                    </div>
-                  )}
-                  {vn.promoContact && (
-                    <div style={{ marginBottom: 7 }}>
-                      <div style={{ fontSize: 10, color: T.muted, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 2 }}>Promoter</div>
-                      <div style={{ fontSize: 12, color: T.body }}>{vn.promoContact}</div>
-                    </div>
-                  )}
-                  {vn.notes && <div style={{ fontSize: 11, color: T.subtle, lineHeight: 1.6, marginTop: 6 }}>{vn.notes}</div>}
+              <div style={{ fontSize:12, color:T.muted, marginBottom:8 }}>{fmtDate(d.date)}</div>
+              {vn.address && <div style={{ fontSize:11, color:T.subtle, marginBottom:8, lineHeight:1.5 }}>{vn.address}</div>}
+              {sel===d.id && (
+                <div style={{ marginTop:10, borderTop:`1px solid ${T.line}`, paddingTop:10 }}>
+                  {vn.prodContact && <div style={{ marginBottom:7 }}><div style={{ fontSize:10, color:T.muted, textTransform:"uppercase", letterSpacing:"0.07em", marginBottom:2 }}>Production</div><div style={{ fontSize:12, color:T.body }}>{vn.prodContact}</div></div>}
+                  {vn.promoContact && <div style={{ marginBottom:7 }}><div style={{ fontSize:10, color:T.muted, textTransform:"uppercase", letterSpacing:"0.07em", marginBottom:2 }}>Promoter</div><div style={{ fontSize:12, color:T.body }}>{vn.promoContact}</div></div>}
+                  {vn.notes && <div style={{ fontSize:11, color:T.subtle, lineHeight:1.6, marginTop:6 }}>{vn.notes}</div>}
                 </div>
               )}
             </div>
@@ -568,45 +760,44 @@ function VenuesView({ tourDays }) {
   );
 }
 
-// ─── PACKLIST VIEW ─────────────────────────────────────────────────────────────
+// ─── PACKLIST VIEW ────────────────────────────────────────────────────────────
 function PacklistView() {
   const [open, setOpen] = useState(Object.keys(PACKLIST));
-  const toggle = cat => setOpen(o => o.includes(cat) ? o.filter(c => c !== cat) : [...o, cat]);
+  const toggle = cat => setOpen(o => o.includes(cat)?o.filter(c=>c!==cat):[...o,cat]);
   const total = Object.values(PACKLIST).flat().length;
-  const warnings = Object.values(PACKLIST).flat().filter(i => i.includes("⚠")).length;
-
+  const warnings = Object.values(PACKLIST).flat().filter(i=>i.includes("⚠")).length;
   return (
-    <div style={{ flex: 1, display: "flex", flexDirection: "column", overflowY: "auto" }}>
-      <div style={{ padding: "24px 28px 16px", borderBottom: `1px solid ${T.line}`, display: "flex", alignItems: "flex-end", gap: 16 }}>
+    <div style={{ flex:1, display:"flex", flexDirection:"column", overflowY:"auto" }}>
+      <div style={{ padding:"24px 28px 16px", borderBottom:`1px solid ${T.line}`, display:"flex", alignItems:"flex-end", gap:16 }}>
         <div>
-          <h1 style={{ fontSize: 18, fontWeight: 700, color: T.heading, margin: 0 }}>Packlist</h1>
-          <p style={{ fontSize: 12, color: T.muted, marginTop: 3 }}>{total} items across {Object.keys(PACKLIST).length} categories</p>
+          <h1 style={{ fontSize:18, fontWeight:700, color:T.heading, margin:0 }}>Packlist</h1>
+          <p style={{ fontSize:12, color:T.muted, marginTop:3 }}>{total} items across {Object.keys(PACKLIST).length} categories</p>
         </div>
         {warnings > 0 && (
-          <div style={{ marginLeft: "auto", background: "#1e1408", border: `1px solid #2e2010`, borderRadius: 6, padding: "6px 12px", fontSize: 12, color: T.orange }}>
-            ⚠ {warnings} item{warnings > 1 ? "s" : ""} need attention
+          <div style={{ marginLeft:"auto", background:"#1e1408", border:`1px solid #2e2010`, borderRadius:6, padding:"6px 12px", fontSize:12, color:T.orange }}>
+            ⚠ {warnings} item{warnings>1?"s":""} need attention
           </div>
         )}
       </div>
-      <div style={{ padding: "20px 28px" }}>
-        {Object.entries(PACKLIST).map(([cat, items]) => (
-          <div key={cat} style={{ marginBottom: 8 }}>
+      <div style={{ padding:"20px 28px" }}>
+        {Object.entries(PACKLIST).map(([cat,items]) => (
+          <div key={cat} style={{ marginBottom:8 }}>
             <button onClick={() => toggle(cat)} style={{
-              width: "100%", background: T.bg1, border: `1px solid ${T.line}`, borderRadius: 6,
-              padding: "10px 14px", cursor: "pointer", display: "flex", alignItems: "center", gap: 10,
-              color: T.heading, fontSize: 13, fontWeight: 600, textAlign: "left",
-              borderBottomLeftRadius: open.includes(cat) ? 0 : 6, borderBottomRightRadius: open.includes(cat) ? 0 : 6,
+              width:"100%", background:T.bg1, border:`1px solid ${T.line}`, borderRadius:6,
+              padding:"10px 14px", cursor:"pointer", display:"flex", alignItems:"center", gap:10,
+              color:T.heading, fontSize:13, fontWeight:600, textAlign:"left",
+              borderBottomLeftRadius: open.includes(cat)?0:6, borderBottomRightRadius: open.includes(cat)?0:6,
             }}>
-              <span style={{ fontSize: 11, color: T.muted, transform: open.includes(cat) ? "rotate(90deg)" : "none", transition: "transform 0.12s", display: "inline-block" }}>▶</span>
+              <span style={{ fontSize:11, color:T.muted, transform:open.includes(cat)?"rotate(90deg)":"none", transition:"transform 0.12s", display:"inline-block" }}>▶</span>
               {cat}
-              <span style={{ marginLeft: "auto", fontSize: 11, color: T.muted }}>{items.length}</span>
+              <span style={{ marginLeft:"auto", fontSize:11, color:T.muted }}>{items.length}</span>
             </button>
             {open.includes(cat) && (
-              <div style={{ background: T.bg1, border: `1px solid ${T.line}`, borderTop: "none", borderBottomLeftRadius: 6, borderBottomRightRadius: 6, padding: "4px 0 8px" }}>
-                {items.map((item, i) => (
-                  <div key={i} style={{ padding: "6px 14px 6px 36px", fontSize: 12, color: item.includes("⚠") ? T.orange : T.body, display: "flex", alignItems: "flex-start", gap: 8 }}>
-                    <span style={{ color: item.includes("⚠") ? T.orange : T.muted, flexShrink: 0 }}>{item.includes("⚠") ? "⚠" : "·"}</span>
-                    {item.replace("⚠ ", "")}
+              <div style={{ background:T.bg1, border:`1px solid ${T.line}`, borderTop:"none", borderBottomLeftRadius:6, borderBottomRightRadius:6, padding:"4px 0 8px" }}>
+                {items.map((item,i) => (
+                  <div key={i} style={{ padding:"6px 14px 6px 36px", fontSize:12, color:item.includes("⚠")?T.orange:T.body, display:"flex", alignItems:"flex-start", gap:8 }}>
+                    <span style={{ color:item.includes("⚠")?T.orange:T.muted, flexShrink:0 }}>{item.includes("⚠")?"⚠":"·"}</span>
+                    {item.replace("⚠ ","")}
                   </div>
                 ))}
               </div>
@@ -621,38 +812,30 @@ function PacklistView() {
 // ─── BACKLINE VIEW ────────────────────────────────────────────────────────────
 function BacklineView() {
   return (
-    <div style={{ flex: 1, display: "flex", flexDirection: "column", overflowY: "auto" }}>
-      <div style={{ padding: "24px 28px 16px", borderBottom: `1px solid ${T.line}` }}>
-        <h1 style={{ fontSize: 18, fontWeight: 700, color: T.heading, margin: 0 }}>Backline</h1>
-        <p style={{ fontSize: 12, color: T.muted, marginTop: 3 }}>Current confirmed and TBC backline requirements</p>
+    <div style={{ flex:1, display:"flex", flexDirection:"column", overflowY:"auto" }}>
+      <div style={{ padding:"24px 28px 16px", borderBottom:`1px solid ${T.line}` }}>
+        <h1 style={{ fontSize:18, fontWeight:700, color:T.heading, margin:0 }}>Backline</h1>
+        <p style={{ fontSize:12, color:T.muted, marginTop:3 }}>Current confirmed and TBC backline requirements</p>
       </div>
-      <div style={{ padding: "20px 28px" }}>
-        <table style={{ width: "100%", borderCollapse: "collapse" }}>
-          <thead>
-            <tr>
-              {["Item", "Spec / Owner", "Status"].map(h => (
-                <th key={h} style={{ fontSize: 10, color: T.muted, textTransform: "uppercase", letterSpacing: "0.08em", textAlign: "left", padding: "6px 12px 10px", borderBottom: `1px solid ${T.line}`, fontWeight: 700 }}>{h}</th>
-              ))}
+      <div style={{ padding:"20px 28px" }}>
+        <table style={{ width:"100%", borderCollapse:"collapse" }}>
+          <thead><tr>{["Item","Spec / Owner","Status"].map(h => (
+            <th key={h} style={{ fontSize:10, color:T.muted, textTransform:"uppercase", letterSpacing:"0.08em", textAlign:"left", padding:"6px 12px 10px", borderBottom:`1px solid ${T.line}`, fontWeight:700 }}>{h}</th>
+          ))}</tr></thead>
+          <tbody>{BACKLINE.map((row,i) => (
+            <tr key={i} style={{ borderBottom:`1px solid ${T.line}` }}>
+              <td style={{ padding:"10px 12px", fontSize:13, fontWeight:600, color:T.heading }}>{row.item}</td>
+              <td style={{ padding:"10px 12px", fontSize:12, color:T.body }}>{row.spec}</td>
+              <td style={{ padding:"10px 12px" }}>
+                <span style={{ fontSize:11, fontWeight:700, padding:"2px 8px", borderRadius:3,
+                  background: row.status.startsWith("Confirmed")?"#0e1e10":T.bg2,
+                  color: row.status.startsWith("Confirmed")?T.sage:T.muted }}>{row.status}</span>
+              </td>
             </tr>
-          </thead>
-          <tbody>
-            {BACKLINE.map((row, i) => (
-              <tr key={i} style={{ borderBottom: `1px solid ${T.line}` }}>
-                <td style={{ padding: "10px 12px", fontSize: 13, fontWeight: 600, color: T.heading }}>{row.item}</td>
-                <td style={{ padding: "10px 12px", fontSize: 12, color: T.body }}>{row.spec}</td>
-                <td style={{ padding: "10px 12px" }}>
-                  <span style={{
-                    fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: 3,
-                    background: row.status.startsWith("Confirmed") ? "#0e1e10" : T.bg2,
-                    color: row.status.startsWith("Confirmed") ? T.sage : T.muted,
-                  }}>{row.status}</span>
-                </td>
-              </tr>
-            ))}
-          </tbody>
+          ))}</tbody>
         </table>
-        <div style={{ marginTop: 20, background: T.bg1, border: `1px solid ${T.line}`, borderRadius: 6, padding: "12px 16px", fontSize: 12, color: T.subtle, lineHeight: 1.65 }}>
-          <strong style={{ color: T.body }}>Synth note:</strong> Mathias's synth runs through a dedicated Jazz amp on stage — not DI. AC confirmed.
+        <div style={{ marginTop:20, background:T.bg1, border:`1px solid ${T.line}`, borderRadius:6, padding:"12px 16px", fontSize:12, color:T.subtle, lineHeight:1.65 }}>
+          <strong style={{ color:T.body }}>Synth note:</strong> Mathias's synth runs through a dedicated Jazz amp on stage — not DI. AC confirmed.
         </div>
       </div>
     </div>
@@ -662,59 +845,54 @@ function BacklineView() {
 // ─── FORMS VIEW ──────────────────────────────────────────────────────────────
 function FormsView({ people }) {
   const [sel, setSel] = useState(null);
-  const form = FORMS.find(f => f.id === sel);
-
+  const form = FORMS.find(f => f.id===sel);
   return (
-    <div style={{ flex: 1, display: "flex", flexDirection: "column", overflowY: "auto" }}>
-      <div style={{ padding: "24px 28px 16px", borderBottom: `1px solid ${T.line}` }}>
-        <h1 style={{ fontSize: 18, fontWeight: 700, color: T.heading, margin: 0 }}>Information Requests</h1>
-        <p style={{ fontSize: 12, color: T.muted, marginTop: 3 }}>Send forms to band and crew; view responses here when submitted</p>
+    <div style={{ flex:1, display:"flex", flexDirection:"column", overflowY:"auto" }}>
+      <div style={{ padding:"24px 28px 16px", borderBottom:`1px solid ${T.line}` }}>
+        <h1 style={{ fontSize:18, fontWeight:700, color:T.heading, margin:0 }}>Information Requests</h1>
+        <p style={{ fontSize:12, color:T.muted, marginTop:3 }}>Send forms to band and crew; view responses here when submitted</p>
       </div>
-      <div style={{ padding: "20px 28px", display: "grid", gridTemplateColumns: sel ? "1fr 1fr" : "repeat(auto-fill, minmax(260px, 1fr))", gap: 12, alignItems: "start" }}>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: 12 }}>
+      <div style={{ padding:"20px 28px", display:"grid", gridTemplateColumns: sel?"1fr 1fr":"repeat(auto-fill, minmax(260px, 1fr))", gap:12, alignItems:"start" }}>
+        <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill, minmax(260px, 1fr))", gap:12 }}>
           {FORMS.map(f => (
-            <div key={f.id} onClick={() => setSel(sel === f.id ? null : f.id)} style={{
-              background: T.bg1, border: `1px solid ${sel === f.id ? T.amber : T.line}`,
-              borderRadius: 7, padding: "16px 18px", cursor: "pointer",
-              transition: "border-color 0.12s",
-            }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
-                <div style={{ fontSize: 14, fontWeight: 700, color: T.heading }}>{f.title}</div>
-                <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 7px", borderRadius: 3, background: T.bg2, color: T.muted, textTransform: "uppercase", letterSpacing: "0.07em" }}>{f.status}</span>
+            <div key={f.id} onClick={() => setSel(sel===f.id?null:f.id)} style={{
+              background:T.bg1, border:`1px solid ${sel===f.id?T.amber:T.line}`,
+              borderRadius:7, padding:"16px 18px", cursor:"pointer" }}>
+              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:8 }}>
+                <div style={{ fontSize:14, fontWeight:700, color:T.heading }}>{f.title}</div>
+                <span style={{ fontSize:10, fontWeight:700, padding:"2px 7px", borderRadius:3, background:T.bg2, color:T.muted, textTransform:"uppercase", letterSpacing:"0.07em" }}>{f.status}</span>
               </div>
-              <div style={{ fontSize: 12, color: T.subtle, lineHeight: 1.55, marginBottom: 10 }}>{f.desc}</div>
-              <div style={{ fontSize: 11, color: T.muted }}>{f.recipients}</div>
+              <div style={{ fontSize:12, color:T.subtle, lineHeight:1.55, marginBottom:10 }}>{f.desc}</div>
+              <div style={{ fontSize:11, color:T.muted }}>{f.recipients}</div>
             </div>
           ))}
         </div>
         {form && (
-          <div style={{ background: T.bg1, border: `1px solid ${T.line}`, borderRadius: 7, padding: "18px 20px" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-              <div style={{ fontSize: 15, fontWeight: 700, color: T.heading }}>{form.title}</div>
-              <button onClick={() => setSel(null)} style={{ background: "none", border: "none", cursor: "pointer", color: T.muted, fontSize: 16 }}>×</button>
+          <div style={{ background:T.bg1, border:`1px solid ${T.line}`, borderRadius:7, padding:"18px 20px" }}>
+            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:14 }}>
+              <div style={{ fontSize:15, fontWeight:700, color:T.heading }}>{form.title}</div>
+              <button onClick={() => setSel(null)} style={{ background:"none", border:"none", cursor:"pointer", color:T.muted, fontSize:16 }}>×</button>
             </div>
             <SectionLabel>Fields</SectionLabel>
-            {form.fields.map((f, i) => (
-              <div key={i} style={{ padding: "7px 0", borderBottom: `1px solid ${T.line}`, fontSize: 12, color: T.body, display: "flex", alignItems: "center", gap: 8 }}>
-                <span style={{ color: T.muted }}>·</span> {f}
+            {form.fields.map((f,i) => (
+              <div key={i} style={{ padding:"7px 0", borderBottom:`1px solid ${T.line}`, fontSize:12, color:T.body, display:"flex", alignItems:"center", gap:8 }}>
+                <span style={{ color:T.muted }}>·</span> {f}
               </div>
             ))}
-            <div style={{ marginTop: 16 }}>
+            <div style={{ marginTop:16 }}>
               <SectionLabel>Send to</SectionLabel>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-                {people.filter(p => form.recipients === "Band + Crew" || (form.recipients === "Band" && p.type === "Band")).map(p => (
-                  <span key={p.id} style={{ fontSize: 11, padding: "3px 9px", background: T.bg2, borderRadius: 20, color: T.body }}>{p.name}</span>
+              <div style={{ display:"flex", flexWrap:"wrap", gap:6 }}>
+                {people.filter(p => form.recipients==="Band + Crew"||(form.recipients==="Band"&&p.type==="Band")).map(p => (
+                  <span key={p.id} style={{ fontSize:11, padding:"3px 9px", background:T.bg2, borderRadius:20, color:T.body }}>{p.name}</span>
                 ))}
               </div>
             </div>
-            <button style={{
-              marginTop: 18, width: "100%", padding: "10px", borderRadius: 6,
-              background: T.bg2, border: `1px solid ${T.line}`, cursor: "pointer",
-              fontSize: 12, fontWeight: 700, color: T.muted, letterSpacing: "0.05em",
-            }}>
+            <button style={{ marginTop:18, width:"100%", padding:"10px", borderRadius:6,
+              background:T.bg2, border:`1px solid ${T.line}`, cursor:"pointer",
+              fontSize:12, fontWeight:700, color:T.muted, letterSpacing:"0.05em" }}>
               Send via WhatsApp / Email ↗
             </button>
-            <p style={{ fontSize: 10, color: T.muted, marginTop: 8, textAlign: "center" }}>Form sending not yet wired up — coming in next iteration</p>
+            <p style={{ fontSize:10, color:T.muted, marginTop:8, textAlign:"center" }}>Form sending not yet wired up — coming in next iteration</p>
           </div>
         )}
       </div>
@@ -722,233 +900,52 @@ function FormsView({ people }) {
   );
 }
 
-// ─── ADVANCING VIEW ───────────────────────────────────────────────────────────
-function AdvancingView({ tourDays, tasks, travel }) {
-  const [activeTab, setActiveTab] = useState("Communication");
-  const [collapsed, setCollapsed]  = useState({});
-
-  const openTasks = tasks.filter(t => t.status !== "Done");
-  const booked    = travel.filter(t => t.ref || t.status === "Booked" || t.status === "Ticketed");
-  const pending   = travel.filter(t => !t.ref && t.status !== "Booked" && t.status !== "Ticketed");
-
-  const toggleGroup = key => setCollapsed(c => ({ ...c, [key]: !c[key] }));
-
-  // Build: { category: { cityCode: { prefix: [tasks] } } }
-  const structured = {};
-  GROUP_ORDER.forEach(g => {
-    structured[g] = {};
-    CITY_ORDER.forEach(cl => { structured[g][cl] = {}; });
-  });
-
-  openTasks.forEach(t => {
-    const cat  = CAT_GROUP[t.category] ? t.category : "Admin";
-    const day  = t.dayId ? tourDays.find(d => d.id === t.dayId) : null;
-    const cl   = day ? (cityLabel(day.city) || "General") : "General";
-    const slot = CITY_ORDER.includes(cl) ? cl : "General";
-    const prefix = taskPrefix(t.task);
-    if (!structured[cat][slot][prefix]) structured[cat][slot][prefix] = [];
-    structured[cat][slot][prefix].push(t);
-  });
-
-  const tabCounts = {};
-  GROUP_ORDER.forEach(g => {
-    tabCounts[g] = Object.values(structured[g]).flatMap(Object.values).flat().length;
-  });
-
-  const cityColor = code => {
-    const entry = Object.values(CITY).find(c => c.label === code);
-    return entry ? entry.accent : T.muted;
-  };
-
-  return (
-    <div style={{ flex: 1, display: "flex", flexDirection: "column", overflowY: "auto" }}>
-      {/* Header */}
-      <div style={{ padding: "24px 28px 0", borderBottom: `1px solid ${T.line}` }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
-          <h1 style={{ fontSize: 18, fontWeight: 700, color: T.heading, margin: 0 }}>Advancing</h1>
-          <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 8px", background: "#1e1a0a", color: T.amber, borderRadius: 3, letterSpacing: "0.08em", border: `1px solid ${T.amberBdr}` }}>PRIVATE</span>
-        </div>
-        {/* Category tabs */}
-        <div style={{ display: "flex", gap: 0, overflowX: "auto" }}>
-          {GROUP_ORDER.map(g => {
-            const cfg = CAT_GROUP[g];
-            const isActive = activeTab === g;
-            return (
-              <button key={g} onClick={() => setActiveTab(g)} style={{
-                background: "none", border: "none", cursor: "pointer",
-                padding: "8px 16px", whiteSpace: "nowrap",
-                fontSize: 11, fontWeight: isActive ? 700 : 400,
-                color: isActive ? cfg.color : T.muted,
-                borderBottom: isActive ? `2px solid ${cfg.color}` : "2px solid transparent",
-                letterSpacing: "0.07em", textTransform: "uppercase",
-              }}>
-                {g}
-                {tabCounts[g] > 0 && (
-                  <span style={{ marginLeft: 6, fontSize: 10, color: isActive ? cfg.color : T.muted, opacity: 0.7 }}>
-                    {tabCounts[g]}
-                  </span>
-                )}
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Content */}
-      <div style={{ padding: "20px 28px", flex: 1 }}>
-        {CITY_ORDER.map(cityCode => {
-          const prefixMap = structured[activeTab][cityCode];
-          if (!Object.keys(prefixMap).length) return null;
-          const cfg = CAT_GROUP[activeTab];
-          const accent = cityCode === "General" ? T.muted : cityColor(cityCode);
-          const totalInCity = Object.values(prefixMap).flat().length;
-
-          return (
-            <div key={cityCode} style={{ marginBottom: 24 }}>
-              {/* City heading */}
-              <div style={{
-                fontSize: 10, fontWeight: 700, textTransform: "uppercase",
-                letterSpacing: "0.12em", marginBottom: 8, paddingBottom: 6,
-                borderBottom: `1px solid ${T.line}`,
-                display: "flex", justifyContent: "space-between", alignItems: "center",
-              }}>
-                <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                  {cityCode !== "General" && (
-                    <span style={{ width: 6, height: 6, borderRadius: "50%", background: accent, display: "inline-block" }} />
-                  )}
-                  <span style={{ color: accent }}>{cityCode}</span>
-                </span>
-                <span style={{ color: T.muted }}>{totalInCity}</span>
-              </div>
-
-              {Object.entries(prefixMap).map(([prefix, items]) => {
-                const isCollapsible = items.length > 1;
-                const key = `${activeTab}:${cityCode}:${prefix}`;
-                const isOpen = !collapsed[key];
-
-                return (
-                  <div key={prefix} style={{ marginBottom: 4 }}>
-                    {isCollapsible ? (
-                      <>
-                        <div onClick={() => toggleGroup(key)} style={{
-                          display: "flex", alignItems: "center", gap: 10, padding: "8px 12px",
-                          background: T.bg1, borderRadius: isOpen ? "5px 5px 0 0" : 5,
-                          cursor: "pointer", border: `1px solid ${T.line}`,
-                          borderLeft: `3px solid ${cfg.color}`,
-                        }}>
-                          <span style={{ fontSize: 10, color: T.muted, transform: isOpen ? "rotate(90deg)" : "none", transition: "transform 0.12s", display: "inline-block", flexShrink: 0 }}>▶</span>
-                          <span style={{ fontSize: 13, color: T.body, fontWeight: 600, flex: 1 }}>{prefix}</span>
-                          <span style={{ fontSize: 11, color: T.muted }}>{items.length} people</span>
-                        </div>
-                        {isOpen && (
-                          <div style={{ background: T.bg2, border: `1px solid ${T.line}`, borderTop: "none", borderRadius: "0 0 5px 5px", padding: "4px 0" }}>
-                            {items.map(t => {
-                              const suffix = t.task.includes(" — ") ? t.task.split(" — ").slice(1).join(" — ") : t.task;
-                              return (
-                                <div key={t.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 12px 6px 32px" }}>
-                                  <StatusDot status={t.status} />
-                                  <span style={{ fontSize: 12, color: t.status === "Done" ? T.muted : T.body, flex: 1 }}>{suffix}</span>
-                                </div>
-                              );
-                            })}
-                          </div>
-                        )}
-                      </>
-                    ) : (
-                      items.map(t => (
-                        <div key={t.id} style={{
-                          display: "flex", alignItems: "flex-start", gap: 10, padding: "8px 12px",
-                          background: T.bg1, borderRadius: 5, marginBottom: 4,
-                          border: `1px solid ${T.line}`, borderLeft: `3px solid ${cfg.color}`,
-                        }}>
-                          <StatusDot status={t.status} />
-                          <div style={{ flex: 1 }}>
-                            <div style={{ fontSize: 13, color: T.body, fontWeight: 500 }}>{t.task}</div>
-                            {t.notes && <div style={{ fontSize: 11, color: T.muted, marginTop: 2 }}>{t.notes}</div>}
-                          </div>
-                        </div>
-                      ))
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-function TravelLeg({ t }) {
-  const fc = cityOf(t.from);
-  const tc = cityOf(t.to);
-  return (
-    <div style={{ background: T.bg1, borderRadius: 6, padding: "10px 12px", marginBottom: 6 }}>
-      <div style={{ fontSize: 12, fontWeight: 600, color: T.heading, marginBottom: 5 }}>{t.passengers.join(", ")}</div>
-      <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12 }}>
-        <span style={{ color: fc ? (CITY[fc] || {accent: T.muted}).accent : T.muted }}>{t.from}</span>
-        <span style={{ color: T.muted }}>→</span>
-        <span style={{ color: tc ? (CITY[tc] || {accent: T.muted}).accent : T.muted }}>{t.to}</span>
-        {(t.dep || t.arr) && <span style={{ fontSize: 11, color: T.muted, marginLeft: "auto" }}>{t.dep}{t.arr ? ` – ${t.arr}` : ""}</span>}
-      </div>
-      {t.flightNo && <div style={{ fontFamily: "monospace", fontSize: 11, color: T.blue, marginTop: 4 }}>{t.flightNo}{t.ref ? ` · ${t.ref}` : ""}</div>}
-      {t.date && <div style={{ fontSize: 11, color: T.muted, marginTop: 2 }}>{fmtDate(t.date)}</div>}
-    </div>
-  );
-}
-
 // ─── SIDEBAR ─────────────────────────────────────────────────────────────────
 const NAV_ITEMS = [
-  { id: "calendar",   icon: "◈", label: "Calendar"  },
-  { id: "venues",     icon: "⌖", label: "Venues"    },
-  { id: "packlist",   icon: "☰", label: "Packlist"  },
-  { id: "backline",   icon: "◎", label: "Backline"  },
-  { id: "forms",      icon: "◻", label: "Forms"     },
+  { id:"calendar", icon:"◈", label:"Calendar"  },
+  { id:"venues",   icon:"⌖", label:"Venues"    },
+  { id:"packlist", icon:"☰", label:"Packlist"  },
+  { id:"backline", icon:"◎", label:"Backline"  },
+  { id:"forms",    icon:"◻", label:"Forms"     },
 ];
-
-const ADV_NAV = { id: "advancing", icon: "⬡", label: "Advancing" };
+const ADV_NAV = { id:"advancing", icon:"⬡", label:"Advancing" };
 
 function Sidebar({ active, onNav, advancing }) {
   const items = advancing ? [...NAV_ITEMS, ADV_NAV] : NAV_ITEMS;
   return (
-    <div style={{
-      width: 200, flexShrink: 0, background: T.bg1, borderRight: `1px solid ${T.line}`,
-      display: "flex", flexDirection: "column",
-    }}>
-      <div style={{ padding: "20px 18px 16px", borderBottom: `1px solid ${T.line}` }}>
-        <div style={{ fontFamily: "'DM Serif Display', Georgia, serif", fontSize: 20, color: T.white, letterSpacing: "-0.02em", lineHeight: 1 }}>Bad Dreems</div>
-        <div style={{ fontSize: 9, color: T.muted, textTransform: "uppercase", letterSpacing: "0.16em", marginTop: 5, fontWeight: 700 }}>TourBook</div>
+    <div style={{ width:200, flexShrink:0, background:T.bg1, borderRight:`1px solid ${T.line}`, display:"flex", flexDirection:"column" }}>
+      <div style={{ padding:"20px 18px 16px", borderBottom:`1px solid ${T.line}` }}>
+        <div style={{ fontFamily:"'DM Serif Display', Georgia, serif", fontSize:20, color:T.white, letterSpacing:"-0.02em", lineHeight:1 }}>Bad Dreems</div>
+        <div style={{ fontSize:9, color:T.muted, textTransform:"uppercase", letterSpacing:"0.16em", marginTop:5, fontWeight:700 }}>TourBook</div>
       </div>
-      <nav style={{ flex: 1, padding: "10px 8px" }}>
+      <nav style={{ flex:1, padding:"10px 8px" }}>
         {items.map(item => {
-          const isAdv = item.id === "advancing";
-          const isActive = active === item.id;
+          const isAdv = item.id==="advancing";
+          const isActive = active===item.id;
           return (
             <button key={item.id} onClick={() => onNav(item.id)} style={{
-              width: "100%", display: "flex", alignItems: "center", gap: 10,
-              padding: "8px 10px", borderRadius: 6, border: "none", cursor: "pointer",
-              background: isActive ? (isAdv ? T.amberBg : T.bg2) : "transparent",
-              color: isActive ? (isAdv ? T.amber : T.heading) : T.subtle,
-              fontSize: 13, fontWeight: isActive ? 600 : 400,
-              marginBottom: 2, textAlign: "left",
-              transition: "background 0.1s, color 0.1s",
-              borderLeft: isActive && isAdv ? `2px solid ${T.amber}` : "2px solid transparent",
+              width:"100%", display:"flex", alignItems:"center", gap:10,
+              padding:"8px 10px", borderRadius:6, border:"none", cursor:"pointer",
+              background: isActive?(isAdv?T.amberBg:T.bg2):"transparent",
+              color: isActive?(isAdv?T.amber:T.heading):T.subtle,
+              fontSize:13, fontWeight: isActive?600:400,
+              marginBottom:2, textAlign:"left", transition:"background 0.1s, color 0.1s",
+              borderLeft: isActive&&isAdv?`2px solid ${T.amber}`:"2px solid transparent",
             }}>
-              <span style={{ fontSize: 14, opacity: 0.7 }}>{item.icon}</span>
+              <span style={{ fontSize:14, opacity:0.7 }}>{item.icon}</span>
               {item.label}
-              {isAdv && <span style={{ marginLeft: "auto", fontSize: 8, color: T.amber, fontWeight: 800, letterSpacing: "0.08em" }}>ADV</span>}
+              {isAdv && <span style={{ marginLeft:"auto", fontSize:8, color:T.amber, fontWeight:800, letterSpacing:"0.08em" }}>ADV</span>}
             </button>
           );
         })}
       </nav>
-      <div style={{ padding: "12px 14px", borderTop: `1px solid ${T.line}`, fontSize: 10, color: T.muted }}>
-        <div style={{ fontWeight: 700, color: T.subtle, marginBottom: 2 }}>Ultra Dundee</div>
+      <div style={{ padding:"12px 14px", borderTop:`1px solid ${T.line}`, fontSize:10, color:T.muted }}>
+        <div style={{ fontWeight:700, color:T.subtle, marginBottom:2 }}>Ultra Dundee</div>
         <div>Apr 9 – May 9, 2026</div>
-        <div style={{ marginTop: 6, display: "flex", gap: 4, flexWrap: "wrap" }}>
-          {Object.entries(CITY).map(([city, c]) => (
-            <span key={city} style={{ display: "flex", alignItems: "center", gap: 3, color: c.accent, fontSize: 9 }}>
-              <span style={{ width: 5, height: 5, borderRadius: "50%", background: c.accent, display: "inline-block" }} />
+        <div style={{ marginTop:6, display:"flex", gap:4, flexWrap:"wrap" }}>
+          {Object.entries(CITY).map(([city,c]) => (
+            <span key={city} style={{ display:"flex", alignItems:"center", gap:3, color:c.accent, fontSize:9 }}>
+              <span style={{ width:5, height:5, borderRadius:"50%", background:c.accent, display:"inline-block" }} />
               {c.label}
             </span>
           ))}
@@ -958,68 +955,58 @@ function Sidebar({ active, onNav, advancing }) {
   );
 }
 
-// ─── ROOT ────────────────────────────────────────────────────────────────────
+// ─── ROOT ─────────────────────────────────────────────────────────────────────
 export default function App() {
   const advancing               = isAdvancing();
   const [page, setPage]         = useState(advancing ? "advancing" : "calendar");
   const [selDay, setSelDay]     = useState(null);
   const [tourDays, setTourDays] = useState([]);
-  const [people, setPeople]     = useState([]);
-  const [travel, setTravel]     = useState([]);
-  const [tasks, setTasks]       = useState([]);
-  const [loading, setLoading]   = useState(true);
-  const [error, setError]       = useState(null);
+  const [people,   setPeople]   = useState([]);
+  const [travel,   setTravel]   = useState([]);
+  const [tasks,    setTasks]    = useState([]);
+  const [loading,  setLoading]  = useState(true);
+  const [error,    setError]    = useState(null);
 
   useEffect(() => {
-    Promise.all([
-      fetchAll(873330),
-      fetchAll(873326),
-      fetchAll(873333),
-      fetchAll(873335),
-    ]).then(([days, ppl, trv, tsk]) => {
-      setTourDays(days.map(mapTourDay).sort((a, b) => (a.date || "").localeCompare(b.date || "")));
-      setPeople(ppl.map(mapPerson));
-      setTravel(trv.map(mapTravel));
-      setTasks(tsk.map(mapTask));
-      setLoading(false);
-    }).catch(err => {
-      setError(err.message);
-      setLoading(false);
-    });
+    Promise.all([fetchAll(873330),fetchAll(873326),fetchAll(873333),fetchAll(873335)])
+      .then(([days,ppl,trv,tsk]) => {
+        setTourDays(days.map(mapTourDay).sort((a,b) => (a.date||"").localeCompare(b.date||"")));
+        setPeople(ppl.map(mapPerson));
+        setTravel(trv.map(mapTravel));
+        setTasks(tsk.map(mapTask));
+        setLoading(false);
+      }).catch(err => { setError(err.message); setLoading(false); });
   }, []);
 
   if (loading) return (
-    <div style={{ background: T.bg, minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 12 }}>
-      <div style={{ fontFamily: "'DM Serif Display', Georgia, serif", fontSize: 22, color: T.white }}>Bad Dreems</div>
-      <div style={{ fontSize: 11, color: T.muted, textTransform: "uppercase", letterSpacing: "0.14em" }}>Loading tour data…</div>
+    <div style={{ background:T.bg, minHeight:"100vh", display:"flex", alignItems:"center", justifyContent:"center", flexDirection:"column", gap:12 }}>
+      <div style={{ fontFamily:"'DM Serif Display', Georgia, serif", fontSize:22, color:T.white }}>Bad Dreems</div>
+      <div style={{ fontSize:11, color:T.muted, textTransform:"uppercase", letterSpacing:"0.14em" }}>Loading tour data…</div>
     </div>
   );
 
   if (error) return (
-    <div style={{ background: T.bg, minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", color: T.red, fontFamily: "monospace", fontSize: 13 }}>
+    <div style={{ background:T.bg, minHeight:"100vh", display:"flex", alignItems:"center", justifyContent:"center", color:T.red, fontFamily:"monospace", fontSize:13 }}>
       error: {error}
     </div>
   );
 
   return (
-    <div style={{
-      minHeight: "100vh", background: T.bg, color: T.body,
-      fontFamily: "'IBM Plex Sans', 'Helvetica Neue', Arial, sans-serif",
-      display: "flex",
-    }}>
+    <div style={{ minHeight:"100vh", background:T.bg, color:T.body,
+      fontFamily:"'IBM Plex Sans', 'Helvetica Neue', Arial, sans-serif", display:"flex" }}>
       <Sidebar active={page} onNav={p => { setPage(p); setSelDay(null); }} advancing={advancing} />
-      <div style={{ flex: 1, display: "flex", overflow: "hidden", minHeight: "100vh" }}>
-        {page === "calendar" && (
+      <div style={{ flex:1, display:"flex", overflow:"hidden", minHeight:"100vh" }}>
+        {page==="calendar" && (
           <>
             <CalendarView tourDays={tourDays} onSelectDay={setSelDay} />
             {selDay && <DayDetail day={selDay} tasks={tasks} travel={travel} onClose={() => setSelDay(null)} />}
           </>
         )}
-        {page === "venues"    && <VenuesView tourDays={tourDays} />}
-        {page === "packlist"  && <PacklistView />}
-        {page === "backline"  && <BacklineView />}
-        {page === "forms"     && <FormsView people={people} />}
-        {page === "advancing" && advancing && <AdvancingView tourDays={tourDays} tasks={tasks} travel={travel} />}
+        {page==="venues"    && <VenuesView tourDays={tourDays} />}
+        {page==="packlist"  && <PacklistView />}
+        {page==="backline"  && <BacklineView />}
+        {page==="forms"     && <FormsView people={people} />}
+        {page==="advancing" && advancing && <AdvancingView tourDays={tourDays} tasks={tasks} travel={travel} />}
       </div>
     </div>
   );
