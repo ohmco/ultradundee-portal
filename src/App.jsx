@@ -889,7 +889,7 @@ function Sidebar({ active, onNav, advancing }) {
 
 // ─── ROOT ────────────────────────────────────────────────────────────────────
 export default function App() {
-  const [page, setPage]         = useState("calendar");
+  const [page, setPage] = useState(advancing ? "advancing" : "calendar");
   const [selDay, setSelDay]     = useState(null);
   const [tourDays, setTourDays] = useState([]);
   const [people, setPeople]     = useState([]);
