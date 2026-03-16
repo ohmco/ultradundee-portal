@@ -52,12 +52,15 @@ const TYPE_BADGE = {
 const CAT_GROUP = {
   "Communication": { label: "Communication", color: T.blue   },
   "Production":    { label: "Production",    color: T.orange },
-  "Travel":        { label: "Travel",        color: T.blue   },
+  "Travel":        { label: "Travel",        color: T.amber  },
   "Accommodation": { label: "Accommodation", color: T.violet },
   "Admin":         { label: "Admin",         color: T.subtle },
 };
 const GROUP_ORDER = ["Communication", "Production", "Travel", "Accommodation", "Admin"];
+const CITY_ORDER  = ["ADL", "MEL", "SYD", "BNE", "General"];
+
 const taskPrefix = name => { const i = name.indexOf(" — "); return i > -1 ? name.slice(0, i) : name; };
+const cityLabel  = city => (CITY[city] || {}).label || null;
 
 // ─── BASEROW ─────────────────────────────────────────────────────────────────
 const TOKEN = "Qu3ab715EJKly2rFhGJagUzPbbIqOYKl";
@@ -180,7 +183,7 @@ const SectionLabel = ({ children }) => (
   </div>
 );
 
-// ─── PACKLIST DATA (static for v1) ───────────────────────────────────────────
+// ─── PACKLIST DATA ────────────────────────────────────────────────────────────
 const PACKLIST = {
   "Instruments & Electronics": [
     "Guitars (touring set — confirm with AC and MD)",
@@ -279,7 +282,6 @@ const isAdvancing = () => {
 // ─── CALENDAR VIEW ────────────────────────────────────────────────────────────
 function CalendarView({ tourDays, onSelectDay }) {
   const [viewMode, setViewMode] = useState("list");
-  const [monthOffset, setMonthOffset] = useState(0);
 
   const sorted = [...tourDays].sort((a, b) => (a.date || "").localeCompare(b.date || ""));
 
@@ -291,7 +293,6 @@ function CalendarView({ tourDays, onSelectDay }) {
     byMonth[key].push(d);
   });
   const months = Object.keys(byMonth).sort();
-
   const upcoming = sorted.find(d => daysFrom(d.date) >= 0);
 
   return (
@@ -361,7 +362,7 @@ function CalendarView({ tourDays, onSelectDay }) {
                         <div style={{ fontSize: 13, fontWeight: 600, color: T.heading, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{d.name}</div>
                         <div style={{ fontSize: 11, color: T.subtle, display: "flex", alignItems: "center", gap: 5, marginTop: 2 }}>
                           <Dot city={d.city} size={6} />
-                          {d.city}{d.venue ? ` · ${d.venue}` : ""}
+                          {cityLabel(d.city) || d.city}{d.venue ? ` · ${d.venue}` : ""}
                         </div>
                       </div>
                       <div style={{ display: "flex", gap: 6, alignItems: "center", flexShrink: 0 }}>
@@ -438,7 +439,7 @@ function DayDetail({ day, tasks, travel, onClose }) {
           <div>
             <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 5 }}>
               <Dot city={day.city} size={8} />
-              <span style={{ fontSize: 11, color: c.accent, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em" }}>{day.city}</span>
+              <span style={{ fontSize: 11, color: c.accent, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em" }}>{cityLabel(day.city) || day.city}</span>
               <Badge text={day.type} type={day.type} />
             </div>
             <div style={{ fontSize: 16, fontWeight: 700, color: T.heading }}>{day.name}</div>
@@ -535,7 +536,7 @@ function VenuesView({ tourDays }) {
                 <div>
                   <div style={{ fontSize: 14, fontWeight: 700, color: T.heading }}>{d.venue || "TBC"}</div>
                   <div style={{ fontSize: 11, color: c.accent, display: "flex", alignItems: "center", gap: 5, marginTop: 3 }}>
-                    <Dot city={d.city} size={6} />{d.city}
+                    <Dot city={d.city} size={6} />{cityLabel(d.city) || d.city}
                   </div>
                 </div>
                 <Badge text={d.type} type={d.type} />
@@ -642,7 +643,7 @@ function BacklineView() {
                 <td style={{ padding: "10px 12px" }}>
                   <span style={{
                     fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: 3,
-                    background: row.status === "Confirmed" ? "#0e1e10" : row.status.startsWith("Confirmed") ? "#0e1e10" : T.bg2,
+                    background: row.status.startsWith("Confirmed") ? "#0e1e10" : T.bg2,
                     color: row.status.startsWith("Confirmed") ? T.sage : T.muted,
                   }}>{row.status}</span>
                 </td>
@@ -686,7 +687,6 @@ function FormsView({ people }) {
             </div>
           ))}
         </div>
-
         {form && (
           <div style={{ background: T.bg1, border: `1px solid ${T.line}`, borderRadius: 7, padding: "18px 20px" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
@@ -724,66 +724,106 @@ function FormsView({ people }) {
 
 // ─── ADVANCING VIEW ───────────────────────────────────────────────────────────
 function AdvancingView({ tourDays, tasks, travel }) {
-  const [advTab, setAdvTab] = useState("tasks");
-  const [collapsed, setCollapsed] = useState({});
+  const [activeTab, setActiveTab] = useState("Communication");
+  const [collapsed, setCollapsed]  = useState({});
+
   const openTasks = tasks.filter(t => t.status !== "Done");
   const booked    = travel.filter(t => t.ref || t.status === "Booked" || t.status === "Ticketed");
   const pending   = travel.filter(t => !t.ref && t.status !== "Booked" && t.status !== "Ticketed");
 
   const toggleGroup = key => setCollapsed(c => ({ ...c, [key]: !c[key] }));
 
-  const grouped = {};
-  GROUP_ORDER.forEach(g => { grouped[g] = {}; });
-  openTasks.forEach(t => {
-    const cat = t.category || "Admin";
-    const grp = CAT_GROUP[cat] ? cat : "Admin";
-    const prefix = taskPrefix(t.task);
-    if (!grouped[grp][prefix]) grouped[grp][prefix] = [];
-    grouped[grp][prefix].push(t);
+  // Build: { category: { cityCode: { prefix: [tasks] } } }
+  const structured = {};
+  GROUP_ORDER.forEach(g => {
+    structured[g] = {};
+    CITY_ORDER.forEach(cl => { structured[g][cl] = {}; });
   });
+
+  openTasks.forEach(t => {
+    const cat  = CAT_GROUP[t.category] ? t.category : "Admin";
+    const day  = t.dayId ? tourDays.find(d => d.id === t.dayId) : null;
+    const cl   = day ? (cityLabel(day.city) || "General") : "General";
+    const slot = CITY_ORDER.includes(cl) ? cl : "General";
+    const prefix = taskPrefix(t.task);
+    if (!structured[cat][slot][prefix]) structured[cat][slot][prefix] = [];
+    structured[cat][slot][prefix].push(t);
+  });
+
+  const tabCounts = {};
+  GROUP_ORDER.forEach(g => {
+    tabCounts[g] = Object.values(structured[g]).flatMap(Object.values).flat().length;
+  });
+
+  const cityColor = code => {
+    const entry = Object.values(CITY).find(c => c.label === code);
+    return entry ? entry.accent : T.muted;
+  };
 
   return (
     <div style={{ flex: 1, display: "flex", flexDirection: "column", overflowY: "auto" }}>
+      {/* Header */}
       <div style={{ padding: "24px 28px 0", borderBottom: `1px solid ${T.line}` }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
           <h1 style={{ fontSize: 18, fontWeight: 700, color: T.heading, margin: 0 }}>Advancing</h1>
           <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 8px", background: "#1e1a0a", color: T.amber, borderRadius: 3, letterSpacing: "0.08em", border: `1px solid ${T.amberBdr}` }}>PRIVATE</span>
         </div>
-        <div style={{ display: "flex", gap: 0, marginTop: 12 }}>
-          {[["tasks", `Tasks (${openTasks.length} open)`], ["travel", `Travel (${pending.length} pending)`]].map(([id, label]) => (
-            <button key={id} onClick={() => setAdvTab(id)} style={{
-              background: "none", border: "none", cursor: "pointer", padding: "8px 16px",
-              fontSize: 11, fontWeight: advTab === id ? 700 : 400,
-              color: advTab === id ? T.amber : T.muted,
-              borderBottom: advTab === id ? `2px solid ${T.amber}` : "2px solid transparent",
-              letterSpacing: "0.07em", textTransform: "uppercase",
-            }}>{label}</button>
-          ))}
+        {/* Category tabs */}
+        <div style={{ display: "flex", gap: 0, overflowX: "auto" }}>
+          {GROUP_ORDER.map(g => {
+            const cfg = CAT_GROUP[g];
+            const isActive = activeTab === g;
+            return (
+              <button key={g} onClick={() => setActiveTab(g)} style={{
+                background: "none", border: "none", cursor: "pointer",
+                padding: "8px 16px", whiteSpace: "nowrap",
+                fontSize: 11, fontWeight: isActive ? 700 : 400,
+                color: isActive ? cfg.color : T.muted,
+                borderBottom: isActive ? `2px solid ${cfg.color}` : "2px solid transparent",
+                letterSpacing: "0.07em", textTransform: "uppercase",
+              }}>
+                {g}
+                {tabCounts[g] > 0 && (
+                  <span style={{ marginLeft: 6, fontSize: 10, color: isActive ? cfg.color : T.muted, opacity: 0.7 }}>
+                    {tabCounts[g]}
+                  </span>
+                )}
+              </button>
+            );
+          })}
         </div>
       </div>
 
-      <div style={{ padding: "20px 28px" }}>
-        {advTab === "tasks" && GROUP_ORDER.map(groupName => {
-          const prefixMap = grouped[groupName];
+      {/* Content */}
+      <div style={{ padding: "20px 28px", flex: 1 }}>
+        {CITY_ORDER.map(cityCode => {
+          const prefixMap = structured[activeTab][cityCode];
           if (!Object.keys(prefixMap).length) return null;
-          const groupCfg = CAT_GROUP[groupName];
-          const totalInGroup = Object.values(prefixMap).flat().length;
+          const cfg = CAT_GROUP[activeTab];
+          const accent = cityCode === "General" ? T.muted : cityColor(cityCode);
+          const totalInCity = Object.values(prefixMap).flat().length;
 
           return (
-            <div key={groupName} style={{ marginBottom: 24 }}>
+            <div key={cityCode} style={{ marginBottom: 24 }}>
+              {/* City heading */}
               <div style={{
-                fontSize: 10, color: groupCfg.color, textTransform: "uppercase",
-                letterSpacing: "0.12em", fontWeight: 700, marginBottom: 8,
-                paddingBottom: 6, borderBottom: `1px solid ${T.line}`,
-                display: "flex", justifyContent: "space-between",
+                fontSize: 10, fontWeight: 700, textTransform: "uppercase",
+                letterSpacing: "0.12em", marginBottom: 8, paddingBottom: 6,
+                borderBottom: `1px solid ${T.line}`,
+                display: "flex", justifyContent: "space-between", alignItems: "center",
               }}>
-                <span>{groupName}</span>
-                <span style={{ color: T.muted }}>{totalInGroup}</span>
+                <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  {cityCode !== "General" && (
+                    <span style={{ width: 6, height: 6, borderRadius: "50%", background: accent, display: "inline-block" }} />
+                  )}
+                  <span style={{ color: accent }}>{cityCode}</span>
+                </span>
+                <span style={{ color: T.muted }}>{totalInCity}</span>
               </div>
 
               {Object.entries(prefixMap).map(([prefix, items]) => {
                 const isCollapsible = items.length > 1;
-                const key = `${groupName}:${prefix}`;
+                const key = `${activeTab}:${cityCode}:${prefix}`;
                 const isOpen = !collapsed[key];
 
                 return (
@@ -794,7 +834,7 @@ function AdvancingView({ tourDays, tasks, travel }) {
                           display: "flex", alignItems: "center", gap: 10, padding: "8px 12px",
                           background: T.bg1, borderRadius: isOpen ? "5px 5px 0 0" : 5,
                           cursor: "pointer", border: `1px solid ${T.line}`,
-                          borderLeft: `3px solid ${groupCfg.color}`,
+                          borderLeft: `3px solid ${cfg.color}`,
                         }}>
                           <span style={{ fontSize: 10, color: T.muted, transform: isOpen ? "rotate(90deg)" : "none", transition: "transform 0.12s", display: "inline-block", flexShrink: 0 }}>▶</span>
                           <span style={{ fontSize: 13, color: T.body, fontWeight: 600, flex: 1 }}>{prefix}</span>
@@ -804,13 +844,10 @@ function AdvancingView({ tourDays, tasks, travel }) {
                           <div style={{ background: T.bg2, border: `1px solid ${T.line}`, borderTop: "none", borderRadius: "0 0 5px 5px", padding: "4px 0" }}>
                             {items.map(t => {
                               const suffix = t.task.includes(" — ") ? t.task.split(" — ").slice(1).join(" — ") : t.task;
-                              const day = t.dayId ? tourDays.find(d => d.id === t.dayId) : null;
-                              const c = day ? (CITY[day.city] || CITY.Adelaide) : null;
                               return (
                                 <div key={t.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 12px 6px 32px" }}>
                                   <StatusDot status={t.status} />
                                   <span style={{ fontSize: 12, color: t.status === "Done" ? T.muted : T.body, flex: 1 }}>{suffix}</span>
-                                  {day && c && <span style={{ fontSize: 11, color: c.accent, display: "flex", alignItems: "center", gap: 3 }}><Dot city={day.city} size={5} />{day.city}</span>}
                                 </div>
                               );
                             })}
@@ -818,24 +855,19 @@ function AdvancingView({ tourDays, tasks, travel }) {
                         )}
                       </>
                     ) : (
-                      items.map(t => {
-                        const day = t.dayId ? tourDays.find(d => d.id === t.dayId) : null;
-                        const c = day ? (CITY[day.city] || CITY.Adelaide) : null;
-                        return (
-                          <div key={t.id} style={{
-                            display: "flex", alignItems: "flex-start", gap: 10, padding: "8px 12px",
-                            background: T.bg1, borderRadius: 5, marginBottom: 4,
-                            border: `1px solid ${T.line}`, borderLeft: `3px solid ${groupCfg.color}`,
-                          }}>
-                            <StatusDot status={t.status} />
-                            <div style={{ flex: 1 }}>
-                              <div style={{ fontSize: 13, color: T.body, fontWeight: 500 }}>{t.task}</div>
-                              {t.notes && <div style={{ fontSize: 11, color: T.muted, marginTop: 2 }}>{t.notes}</div>}
-                            </div>
-                            {day && c && <span style={{ fontSize: 11, color: c.accent, display: "flex", alignItems: "center", gap: 4, flexShrink: 0 }}><Dot city={day.city} size={6} />{day.city}</span>}
+                      items.map(t => (
+                        <div key={t.id} style={{
+                          display: "flex", alignItems: "flex-start", gap: 10, padding: "8px 12px",
+                          background: T.bg1, borderRadius: 5, marginBottom: 4,
+                          border: `1px solid ${T.line}`, borderLeft: `3px solid ${cfg.color}`,
+                        }}>
+                          <StatusDot status={t.status} />
+                          <div style={{ flex: 1 }}>
+                            <div style={{ fontSize: 13, color: T.body, fontWeight: 500 }}>{t.task}</div>
+                            {t.notes && <div style={{ fontSize: 11, color: T.muted, marginTop: 2 }}>{t.notes}</div>}
                           </div>
-                        );
-                      })
+                        </div>
+                      ))
                     )}
                   </div>
                 );
@@ -843,19 +875,6 @@ function AdvancingView({ tourDays, tasks, travel }) {
             </div>
           );
         })}
-
-        {advTab === "travel" && (
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24 }}>
-            <div>
-              <SectionLabel>Booked — {booked.length}</SectionLabel>
-              {booked.map(t => <TravelLeg key={t.id} t={t} />)}
-            </div>
-            <div>
-              <SectionLabel>Pending — {pending.length}</SectionLabel>
-              {pending.map(t => <TravelLeg key={t.id} t={t} />)}
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );
@@ -901,7 +920,6 @@ function Sidebar({ active, onNav, advancing }) {
         <div style={{ fontFamily: "'DM Serif Display', Georgia, serif", fontSize: 20, color: T.white, letterSpacing: "-0.02em", lineHeight: 1 }}>Bad Dreems</div>
         <div style={{ fontSize: 9, color: T.muted, textTransform: "uppercase", letterSpacing: "0.16em", marginTop: 5, fontWeight: 700 }}>TourBook</div>
       </div>
-
       <nav style={{ flex: 1, padding: "10px 8px" }}>
         {items.map(item => {
           const isAdv = item.id === "advancing";
@@ -924,7 +942,6 @@ function Sidebar({ active, onNav, advancing }) {
           );
         })}
       </nav>
-
       <div style={{ padding: "12px 14px", borderTop: `1px solid ${T.line}`, fontSize: 10, color: T.muted }}>
         <div style={{ fontWeight: 700, color: T.subtle, marginBottom: 2 }}>Ultra Dundee</div>
         <div>Apr 9 – May 9, 2026</div>
@@ -971,8 +988,6 @@ export default function App() {
     });
   }, []);
 
-  const handleSelectDay = day => { setSelDay(day); };
-
   if (loading) return (
     <div style={{ background: T.bg, minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 12 }}>
       <div style={{ fontFamily: "'DM Serif Display', Georgia, serif", fontSize: 22, color: T.white }}>Bad Dreems</div>
@@ -993,11 +1008,10 @@ export default function App() {
       display: "flex",
     }}>
       <Sidebar active={page} onNav={p => { setPage(p); setSelDay(null); }} advancing={advancing} />
-
       <div style={{ flex: 1, display: "flex", overflow: "hidden", minHeight: "100vh" }}>
         {page === "calendar" && (
           <>
-            <CalendarView tourDays={tourDays} onSelectDay={handleSelectDay} />
+            <CalendarView tourDays={tourDays} onSelectDay={setSelDay} />
             {selDay && <DayDetail day={selDay} tasks={tasks} travel={travel} onClose={() => setSelDay(null)} />}
           </>
         )}
