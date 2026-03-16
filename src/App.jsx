@@ -889,7 +889,8 @@ function Sidebar({ active, onNav, advancing }) {
 
 // ─── ROOT ────────────────────────────────────────────────────────────────────
 export default function App() {
-  const [page, setPage] = useState(advancing ? "advancing" : "calendar");
+  const advancing               = isAdvancing();
+  const [page, setPage]         = useState(advancing ? "advancing" : "calendar");
   const [selDay, setSelDay]     = useState(null);
   const [tourDays, setTourDays] = useState([]);
   const [people, setPeople]     = useState([]);
@@ -897,7 +898,6 @@ export default function App() {
   const [tasks, setTasks]       = useState([]);
   const [loading, setLoading]   = useState(true);
   const [error, setError]       = useState(null);
-  const advancing               = isAdvancing();
 
   useEffect(() => {
     Promise.all([
