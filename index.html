@@ -1,19 +1,370 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Bad Dreems — Advancing Portal</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&display=swap" rel="stylesheet">
-    <style>
-      * { box-sizing: border-box; margin: 0; padding: 0; }
-      body { background: #1a1a1a; }
-    </style>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
-  </body>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Day Sheet — Bad//Dreems // Thornbury Theatre</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: #f9f8f6;
+    color: #1a1a1a;
+    padding: 2rem 1.25rem 3rem;
+  }
+
+  a { color: inherit; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  .w { max-width: 860px; margin: 0 auto; }
+
+  /* ── Header ── */
+  .hdr {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    gap: 1rem;
+    padding-bottom: 1.25rem;
+    border-bottom: 2px solid #1a1a1a;
+    margin-bottom: 1.5rem;
+  }
+
+  .logo {
+    font-size: 40px;
+    font-weight: 700;
+    letter-spacing: -1px;
+    line-height: 1;
+  }
+
+  .logo em { color: #C41E2A; font-style: normal; }
+
+  .badge {
+    display: inline-block;
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    background: #1a1a1a;
+    color: #f9f8f6;
+    padding: 4px 10px;
+    border-radius: 2px;
+    margin-top: 8px;
+  }
+
+  .meta { text-align: right; }
+
+  .meta-date {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    opacity: .45;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+
+  .meta-venue { font-size: 20px; font-weight: 500; line-height: 1.1; }
+
+  .meta-addr {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    opacity: .45;
+    margin-top: 3px;
+  }
+
+  /* ── Cards ── */
+  .grid2 {
+    display: grid;
+    grid-template-columns: minmax(0,1fr) minmax(0,1fr);
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+
+  .card {
+    background: #fff;
+    border: .5px solid rgba(0,0,0,.1);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+
+  .ch {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 9px 1.25rem;
+    border-bottom: .5px solid rgba(0,0,0,.08);
+    background: rgba(0,0,0,.025);
+  }
+
+  .dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: rgba(0,0,0,.2);
+    flex-shrink: 0;
+  }
+
+  .dot.g { background: #1D9E75; }
+  .dot.r { background: #C41E2A; }
+
+  .lbl {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    opacity: .4;
+  }
+
+  .ir {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 8px;
+    padding: 8px 1.25rem;
+    border-bottom: .5px solid rgba(0,0,0,.07);
+    font-size: 12px;
+  }
+
+  .ir:last-child { border-bottom: none; }
+  .ik { opacity: .5; white-space: nowrap; flex-shrink: 0; }
+  .iv { font-family: 'DM Mono', monospace; font-size: 11px; font-weight: 500; text-align: right; }
+  .iv a { color: #185FA5; }
+
+  /* ── Schedule ── */
+  .sched {
+    background: #fff;
+    border: .5px solid rgba(0,0,0,.1);
+    border-radius: 12px;
+    overflow: hidden;
+    margin-bottom: 12px;
+  }
+
+  .sr {
+    display: grid;
+    grid-template-columns: 100px 1fr auto;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 1.25rem;
+    border-bottom: .5px solid rgba(0,0,0,.07);
+  }
+
+  .sr:last-child { border-bottom: none; }
+  .sr:hover { background: rgba(0,0,0,.015); }
+
+  .sr.brk { background: rgba(0,0,0,.02); }
+
+  .sr.doors { background: #E1F5EE; }
+  .sr.doors .st { color: #0F6E56; }
+  .sr.doors .si { color: #0F6E56; font-weight: 500; }
+
+  .sr.hl { background: #1a1a1a; }
+  .sr.hl .st { color: #fff; opacity: 1; }
+  .sr.hl .si { color: #fff; }
+  .sr.hl .ss { color: rgba(255,255,255,.35); }
+
+  .st {
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    font-weight: 500;
+    white-space: nowrap;
+    opacity: .8;
+  }
+
+  .si { font-size: 13px; }
+  .ss { font-size: 11px; opacity: .38; margin-top: 2px; }
+
+  /* ── Badges ── */
+  .bdg {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: .05em;
+    padding: 3px 8px;
+    border-radius: 3px;
+    white-space: nowrap;
+  }
+
+  .b-load  { background: #FAEEDA; color: #854F0B; }
+  .b-sc    { background: #E6F1FB; color: #185FA5; }
+  .b-act   { background: #EEEDFE; color: #534AB7; }
+  .b-doors { background: #E1F5EE; color: #0F6E56; }
+  .b-hl    { background: #C41E2A; color: #fff; }
+  .b-brk   { background: rgba(0,0,0,.06); color: rgba(0,0,0,.4); }
+
+  /* ── Notes ── */
+  .notes {
+    background: #fff;
+    border: .5px solid rgba(0,0,0,.1);
+    border-radius: 12px;
+    overflow: hidden;
+    margin-bottom: 12px;
+  }
+
+  .nb { padding: 1rem 1.25rem; }
+
+  .bl {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    margin-bottom: 6px;
+    font-size: 13px;
+    opacity: .7;
+    line-height: 1.65;
+  }
+
+  .bl:last-child { margin-bottom: 0; }
+
+  .bl::before {
+    content: '';
+    display: block;
+    width: 4px; height: 4px;
+    border-radius: 50%;
+    background: #1a1a1a;
+    opacity: .35;
+    margin-top: 7px;
+    flex-shrink: 0;
+  }
+
+  /* ── Footer ── */
+  .ft {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 1rem;
+    border-top: .5px solid rgba(0,0,0,.1);
+  }
+
+  .ftx {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    opacity: .3;
+    letter-spacing: .06em;
+  }
+
+  @media (max-width: 600px) {
+    .hdr { grid-template-columns: 1fr; }
+    .meta { text-align: left; }
+    .grid2 { grid-template-columns: 1fr; }
+    .logo { font-size: 30px; }
+    .sr { grid-template-columns: 80px 1fr auto; }
+  }
+</style>
+</head>
+<body>
+<div class="w">
+
+  <!-- Header -->
+  <div class="hdr">
+    <div>
+      <div class="logo">BAD<em>//</em>DREEMS</div>
+      <div class="badge">Ultra Dundee Tour 2026</div>
+    </div>
+    <div class="meta">
+      <div class="meta-date">Saturday 18 April 2026 — Melbourne</div>
+      <div class="meta-venue">Thornbury Theatre</div>
+      <div class="meta-addr">
+        <a href="https://maps.app.goo.gl/y9YasGeVV2pXLk8z6" target="_blank">859 High St, Thornbury VIC 3071 ↗</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Venue + Promoter -->
+  <div class="grid2">
+    <div class="card">
+      <div class="ch"><div class="dot"></div><div class="lbl">Venue</div></div>
+      <div class="ir"><span class="ik">Address</span><span class="iv"><a href="https://maps.app.goo.gl/y9YasGeVV2pXLk8z6" target="_blank">859 High St, Thornbury ↗</a></span></div>
+      <div class="ir"><span class="ik">Load in access</span><span class="iv">Front entrance or rear laneway</span></div>
+      <div class="ir"><span class="ik">Parking</span><span class="iv">High St (no restrict. after 6pm)</span></div>
+      <div class="ir"><span class="ik">Green rooms</span><span class="iv">2 × private (incl. bathroom)</span></div>
+      <div class="ir"><span class="ik">Curfew</span><span class="iv">01:00</span></div>
+      <div class="ir"><span class="ik">Tickets</span><span class="iv"><a href="https://bit.ly/BadDreems-TTT" target="_blank">bit.ly/BadDreems-TTT ↗</a></span></div>
+      <div class="ir"><span class="ik">Capacity</span><span class="iv">~814 sold — GA standing</span></div>
+    </div>
+    <div class="card">
+      <div class="ch"><div class="dot"></div><div class="lbl">Promoter — Yours &amp; Owls</div></div>
+      <div class="ir"><span class="ik">Venue contact / booker</span><span class="iv">Ethan Harvey</span></div>
+      <div class="ir"><span class="ik">Email</span><span class="iv"><a href="mailto:ethan@nighteatsday.com">ethan@nighteatsday.com</a></span></div>
+      <div class="ir"><span class="ik">Mobile</span><span class="iv"><a href="tel:+61433083078">0433 083 078</a></span></div>
+      <div class="ir"><span class="ik">Y&amp;O Director</span><span class="iv">Ben Tillman</span></div>
+      <div class="ir"><span class="ik">Email</span><span class="iv"><a href="mailto:ben@nighteatsday.com">ben@nighteatsday.com</a></span></div>
+      <div class="ir"><span class="ik">Mobile</span><span class="iv"><a href="tel:+61412123989">0412 123 989</a></span></div>
+      <div class="ir"><span class="ik">Guest list deadline</span><span class="iv">48hrs prior — via Ethan</span></div>
+    </div>
+  </div>
+
+  <!-- Schedule -->
+  <div class="sched">
+    <div class="ch"><div class="dot g"></div><div class="lbl">Run of show</div></div>
+    <div class="sr"><div class="st">09:00</div><div><div class="si">Backline delivery &amp; setup</div><div class="ss">setup runs 09:00–11:00</div></div><div class="bdg b-load">load</div></div>
+    <div class="sr"><div class="st">11:30</div><div><div class="si">Headline load in — Bad//Dreems</div></div><div class="bdg b-load">load</div></div>
+    <div class="sr"><div class="st">12:00–14:00</div><div><div class="si">Bad//Dreems soundcheck</div><div class="ss">own FOH mixing headline</div></div><div class="bdg b-sc">soundcheck</div></div>
+    <div class="sr"><div class="st">15:00</div><div><div class="si">Supports load in</div></div><div class="bdg b-load">load</div></div>
+    <div class="sr"><div class="st">15:30–16:30</div><div><div class="si">The Pretty Littles soundcheck</div></div><div class="bdg b-sc">soundcheck</div></div>
+    <div class="sr"><div class="st">16:45–17:15</div><div><div class="si">Don't Thank Me Spank Me soundcheck</div></div><div class="bdg b-sc">soundcheck</div></div>
+    <div class="sr"><div class="st">17:30–17:50</div><div><div class="si">Jack Griffith line check</div><div class="ss">mic / acoustic only</div></div><div class="bdg b-sc">soundcheck</div></div>
+    <div class="sr brk"><div class="st">18:00</div><div><div class="si">Dinner / break</div></div><div class="bdg b-brk">break</div></div>
+    <div class="sr doors"><div class="st">19:00</div><div><div class="si">Doors open</div></div><div class="bdg b-doors">doors</div></div>
+    <div class="sr"><div class="st">19:10–19:35</div><div><div class="si">Jack Griffith</div><div class="ss">support · 25 min</div></div><div class="bdg b-act">act</div></div>
+    <div class="sr brk"><div class="st">19:35–19:40</div><div><div class="si">Changeover</div></div><div class="bdg b-brk">5 min</div></div>
+    <div class="sr"><div class="st">19:40–20:10</div><div><div class="si">Don't Thank Me Spank Me</div><div class="ss">support · 30 min</div></div><div class="bdg b-act">act</div></div>
+    <div class="sr brk"><div class="st">20:10–20:30</div><div><div class="si">Changeover</div></div><div class="bdg b-brk">20 min</div></div>
+    <div class="sr"><div class="st">20:30–21:15</div><div><div class="si">The Pretty Littles</div><div class="ss">support · 45 min</div></div><div class="bdg b-act">act</div></div>
+    <div class="sr brk"><div class="st">21:15–21:40</div><div><div class="si">Changeover</div></div><div class="bdg b-brk">25 min</div></div>
+    <div class="sr hl"><div class="st">21:40</div><div><div class="si" style="font-weight:500;font-size:14px">Bad//Dreems</div><div class="ss">headline</div></div><div class="bdg b-hl">headline</div></div>
+  </div>
+
+  <!-- Tech + TM -->
+  <div class="grid2">
+    <div class="card">
+      <div class="ch"><div class="dot"></div><div class="lbl">Tech</div></div>
+      <div class="ir"><span class="ik">House audio</span><span class="iv">RMG Events — Manish</span></div>
+      <div class="ir"><span class="ik">Desk</span><span class="iv">dLive S7000</span></div>
+      <div class="ir"><span class="ik">Stage rack</span><span class="iv">M64</span></div>
+      <div class="ir"><span class="ik">Supports mixing</span><span class="iv">Manish (RMG Events)</span></div>
+      <div class="ir"><span class="ik">Headline mixing</span><span class="iv">Own FOH (Bad//Dreems)</span></div>
+      <div class="ir"><span class="ik">Stage hands</span><span class="iv">2 × required soundcheck→end</span></div>
+      <div class="ir"><span class="ik">Lighting</span><span class="iv">House LX — soundcheck→end</span></div>
+      <div class="ir"><span class="ik">VJ</span><span class="iv">Required — LED screen in use</span></div>
+      <div class="ir"><span class="ik">Backline</span><span class="iv">Bad//Dreems own</span></div>
+      <div class="ir"><span class="ik">Specs</span><span class="iv"><a href="https://docs.google.com/document/d/1RytbojluBI-cTnjnQuyl9lqSIQXbPHX49N8XslhJZMg/edit" target="_blank">Venue production doc ↗</a></span></div>
+    </div>
+    <div class="card">
+      <div class="ch"><div class="dot r"></div><div class="lbl">Tour manager</div></div>
+      <div class="ir"><span class="ik">Name</span><span class="iv">Alex Beck</span></div>
+      <div class="ir"><span class="ik">Mobile</span><span class="iv"><a href="tel:+61437484888">+61 437 484 888</a></span></div>
+      <div class="ir"><span class="ik">Email</span><span class="iv"><a href="mailto:alex@goldenpointaudio.com">alex@goldenpointaudio.com</a></span></div>
+      <div class="ch" style="margin-top:4px"><div class="dot"></div><div class="lbl">Hospitality</div></div>
+      <div class="ir"><span class="ik">Rider requests</span><span class="iv">via Ethan — 7 days prior</span></div>
+      <div class="ir"><span class="ik">Taphouse discount</span><span class="iv">50% off — settled post-show</span></div>
+      <div class="ir"><span class="ik">Taphouse menu</span><span class="iv"><a href="http://www.thornburytaphouse.com" target="_blank">thornburytaphouse.com ↗</a></span></div>
+      <div class="ch" style="margin-top:4px"><div class="dot"></div><div class="lbl">Merch</div></div>
+      <div class="ir"><span class="ik">Area</span><span class="iv">Supplied by venue</span></div>
+      <div class="ir"><span class="ik">Sellers / float</span><span class="iv">Artist to supply</span></div>
+      <div class="ir"><span class="ik">EFTPOS</span><span class="iv">Bring own — recommended</span></div>
+      <div class="ir"><span class="ik">Split</span><span class="iv">Artist keeps 100%</span></div>
+    </div>
+  </div>
+
+  <!-- Notes -->
+  <div class="notes">
+    <div class="ch"><div class="dot g"></div><div class="lbl">Notes</div></div>
+    <div class="nb">
+      <div class="bl">2 × stage hands + Manish required from soundcheck through end of show. Tight changeover times — best people on the day please.</div>
+      <div class="bl">Bad//Dreems using LED screen — VJ required from soundcheck through end of show.</div>
+      <div class="bl">Bad//Dreems bringing own backline. Own FOH engineer mixing headline set.</div>
+      <div class="bl">Guest list to Ethan at least 48hrs prior. All support acts to be reminded of this.</div>
+      <div class="bl">All merch to be removed from venue by close of night unless otherwise arranged.</div>
+      <div class="bl">Ticketing via Oztix. Ticket link: <a href="https://bit.ly/BadDreems-TTT" target="_blank" style="opacity:1;color:#185FA5">bit.ly/BadDreems-TTT</a></div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="ft">
+    <div class="ftx">Day sheet — 18 Apr 2026 · Ultra Dundee Tour · Melbourne</div>
+    <div class="ftx">TM: Alex Beck · +61 437 484 888</div>
+  </div>
+
+</div>
+</body>
 </html>
